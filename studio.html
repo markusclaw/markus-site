@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markus Studio — Podcast Note-Taker</title>
+  <meta name="description" content="Markus Studio is a real-time podcast transcription dashboard — capture, transcribe, and save notes from any audio source." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .studio-hero {
+      padding: 62px 0 28px;
+      display: grid;
+      grid-template-columns: 1.4fr 0.6fr;
+      gap: 26px;
+    }
+    .studio-main { padding: 38px; border-radius: 28px; }
+    .studio-main h1 {
+      margin: 18px 0 16px;
+      font-size: clamp(2.6rem, 6vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+      font-weight: 800;
+    }
+    .studio-main h1 em {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-style: italic;
+      color: var(--accent);
+    }
+    .studio-desc {
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 28px;
+    }
+
+    .launch-group { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 32px; }
+    .btn-launch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      border-radius: 16px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      background: linear-gradient(135deg, var(--accent), #ffbf5f);
+      color: #111827;
+      border: none;
+      cursor: pointer;
+      transition: 180ms ease;
+      text-decoration: none;
+    }
+    .btn-launch:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,165,36,0.3); }
+    .btn-launch svg { width: 20px; height: 20px; }
+    .launch-hint {
+      color: var(--muted);
+      font-size: 0.88rem;
+      max-width: 26ch;
+      line-height: 1.4;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .status-badge.offline {
+      background: rgba(248,113,113,0.1);
+      color: #f87171;
+      border: 1px solid rgba(248,113,113,0.18);
+    }
+    .status-badge.online {
+      background: rgba(52,211,153,0.1);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.18);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-badge.online .status-dot {
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .how-it-works { padding: 38px; border-radius: 28px; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 22px;
+    }
+    .step-card {
+      padding: 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(124, 153, 182, 0.1);
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      background: rgba(245,165,36,0.12);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+    }
+    .step-card h4 { margin: 0 0 6px; font-size: 1.02rem; }
+    .step-card p { color: var(--muted); font-size: 0.92rem; }
+
+    .cmd-block {
+      margin-top: 20px;
+      padding: 18px 22px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(124, 153, 182, 0.12);
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.92rem;
+      color: var(--accent-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .cmd-block code { white-space: nowrap; overflow-x: auto; }
+    .copy-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(124,153,182,0.15);
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: 180ms ease;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+    .sidebar-card { padding: 28px; border-radius: 28px; align-self: start; }
+    .feature-list { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 14px; }
+    .feature-list li {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(124,153,182,0.1);
+      font-size: 0.94rem;
+    }
+    .feature-list li strong { display: block; margin-bottom: 2px; }
+    .feature-list li span { color: var(--muted); font-size: 0.86rem; }
+
+    .tech-section { padding: 26px 0; }
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .tech-card {
+      padding: 20px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(124,153,182,0.1);
+      text-align: center;
+    }
+    .tech-icon {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    .tech-card h4 { margin: 0 0 4px; font-size: 0.95rem; }
+    .tech-card p { color: var(--muted); font-size: 0.82rem; margin: 0; }
+
+    @media (max-width: 980px) {
+      .studio-hero { grid-template-columns: 1fr; }
+      .steps-grid, .tech-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .studio-main, .how-it-works, .sidebar-card { padding: 24px; }
+      .steps-grid, .tech-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="./index.html">Markus <span>Orus</span></a>
+      <nav class="nav-links">
+        <a href="./index.html#about">About</a>
+        <a href="./index.html#work">Work</a>
+        <a href="./index.html#systems">Systems</a>
+        <a href="./studio.html" style="color: var(--accent);">Studio</a>
+        <a href="./index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="studio-hero container">
+      <div class="studio-main glass">
+        <div class="label">🎙️ Podcast Intelligence</div>
+        <h1>Markus <em>Studio</em></h1>
+        <p class="studio-desc">
+          Real-time podcast transcription powered by local AI. Capture audio from any source, transcribe in multiple languages, and save structured session notes — all running privately on your machine.
+        </p>
+
+        <div id="status-indicator">
+          <div class="status-badge offline">
+            <div class="status-dot"></div>
+            Server offline
+          </div>
+        </div>
+
+        <div class="launch-group">
+          <a id="launch-btn" class="btn-launch" href="http://localhost:8080" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Launch Studio
+          </a>
+          <span class="launch-hint">Opens the local dashboard at localhost:8080</span>
+        </div>
+
+        <div class="cmd-block">
+          <code>python3 ~/OpenClaw/podcast-notetaker/markus-studio.py</code>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('python3 ~/OpenClaw/podcast-notetaker/markus-studio.py').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)})">Copy</button>
+        </div>
+      </div>
+
+      <aside class="sidebar-card glass">
+        <p class="section-kicker">Capabilities</p>
+        <ul class="feature-list">
+          <li>
+            <strong>Live Transcription</strong>
+            <span>Real-time speech-to-text as you record</span>
+          </li>
+          <li>
+            <strong>Multi-Language</strong>
+            <span>Spanish, English, Portuguese, French, or auto-detect</span>
+          </li>
+          <li>
+            <strong>Session Notes</strong>
+            <span>Timestamped markdown files saved automatically</span>
+          </li>
+          <li>
+            <strong>Device Selector</strong>
+            <span>Pick any mic or virtual audio device</span>
+          </li>
+          <li>
+            <strong>100% Local</strong>
+            <span>No cloud, no API keys, fully private</span>
+          </li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="section container">
+      <div class="how-it-works glass">
+        <p class="section-kicker">How It Works</p>
+        <h2 style="margin: 10px 0 0; font-size: clamp(1.8rem, 3.5vw, 2.6rem); line-height: 1; letter-spacing: -0.04em;">Three steps to live notes</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h4>Start the server</h4>
+            <p>Run the command above in Terminal. The server loads the Whisper AI model and starts listening on port 8080.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h4>Hit Launch Studio</h4>
+            <p>Click the button above or go to localhost:8080. Pick your language and audio device, then press Start Listening.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h4>Talk and capture</h4>
+            <p>Speak naturally — transcribed entries appear live with timestamps. Stop when done and your session saves as markdown.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tech-section container">
+      <p class="section-kicker">Under the Hood</p>
+      <h2 style="margin: 10px 0 0; font-size: clamp(1.8rem, 3.5vw, 2.6rem); line-height: 1; letter-spacing: -0.04em;">Built on solid foundations</h2>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tech-icon">🧠</div>
+          <h4>OpenAI Whisper</h4>
+          <p>State-of-the-art speech recognition running locally</p>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">🎛️</div>
+          <h4>BlackHole 2ch</h4>
+          <p>Virtual audio routing for system audio capture</p>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">🎤</div>
+          <h4>Revelator IO 24</h4>
+          <p>Direct mic input for podcast recording</p>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">📝</div>
+          <h4>Markdown Export</h4>
+          <p>Clean timestamped session files</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container quote-section">
+      <blockquote>
+        "A good system doesn't just record — it captures the signal."
+      </blockquote>
+    </section>
+  </main>
+
+  <script>
+    // Check if the local Studio server is running
+    async function checkServer() {
+      const badge = document.getElementById('status-indicator');
+      const btn = document.getElementById('launch-btn');
+      try {
+        const res = await fetch('http://localhost:8080/api/status', { mode: 'cors', signal: AbortSignal.timeout(2000) });
+        if (res.ok) {
+          const data = await res.json();
+          const isListening = data.running;
+          badge.innerHTML = `<div class="status-badge online"><div class="status-dot"></div>Server running${isListening ? ' · Listening' : ''}</div>`;
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+        } else {
+          showOffline(badge, btn);
+        }
+      } catch {
+        showOffline(badge, btn);
+      }
+    }
+
+    function showOffline(badge, btn) {
+      badge.innerHTML = '<div class="status-badge offline"><div class="status-dot"></div>Server offline — start it first</div>';
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'auto';
+    }
+
+    // Check immediately and every 5 seconds
+    checkServer();
+    setInterval(checkServer, 5000);
+  </script>
+</body>
+</html>
