@@ -9,7 +9,7 @@ async function hashPIN(pin) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const EXPECTED_PIN_HASH = 'c775e1d4f67f1c9dd9a48fae0db2e2e0eb0e09c38ad2eef915e1fcf4ebe1502';
+const EXPECTED_PIN_HASH = '91b4d142823f7d20c5f08df69122de43f35f057a988d9619f6d3138485c9a203';
 
 // PIN Authentication
 document.getElementById('pin-submit').addEventListener('click', authenticatePIN);
