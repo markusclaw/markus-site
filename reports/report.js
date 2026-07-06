@@ -1,15 +1,7 @@
 // Markus Reports Log Viewer
 
-// SHA-256 hash for PIN validation
-async function hashPIN(pin) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pin);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-const EXPECTED_PIN_HASH = '91b4d142823f7d20c5f08df69122de43f35f057a988d9619f6d3138485c9a203';
+// Simple PIN validation
+const EXPECTED_PIN = '000000';
 
 // PIN Authentication
 document.getElementById('pin-submit').addEventListener('click', authenticatePIN);
@@ -17,7 +9,7 @@ document.getElementById('pin-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') authenticatePIN();
 });
 
-async function authenticatePIN() {
+function authenticatePIN() {
     const pinInput = document.getElementById('pin-input');
     const errorDiv = document.getElementById('pin-error');
     const pin = pinInput.value;
@@ -27,11 +19,7 @@ async function authenticatePIN() {
         return;
     }
 
-    const hash = await hashPIN(pin);
-    console.log('Entered PIN:', pin);
-    console.log('Computed hash:', hash);
-    console.log('Expected hash:', EXPECTED_PIN_HASH);
-    if (hash === EXPECTED_PIN_HASH) {
+    if (pin === EXPECTED_PIN) {
         sessionStorage.setItem('markus-auth', 'true');
         showDashboard();
         loadReports();
