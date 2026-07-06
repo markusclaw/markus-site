@@ -1,312 +1,396 @@
-/* ── Markus Reports Dashboard — report.js ────────────────────── */
-(function () {
-  'use strict';
+// Markus Reports Log — Self-Enhancement Viewer
 
-  const PIN_HASH = '91b4d142823f7d20c5f08df69122de43f35f057a988d9619f6d3138485c9a203';
-  const SESSION_KEY = 'markus_reports_auth';
+// Simple PIN "curtain" (deterrent, not real security)
+const EXPECTED_PIN = '000000';
 
-  // ── Helpers ───────────────────────────────────────────────
-  async function sha256(str) {
-    const buf = new TextEncoder().encode(str);
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+// Metric keys → display labels (0–10 scale)
+const METRICS = [
+    { key: 'response_quality', label: 'Response Quality' },
+    { key: 'cost_efficiency', label: 'Cost Efficiency' },
+    { key: 'task_completion', label: 'Task Completion' },
+    { key: 'autonomy', label: 'Autonomy' },
+    { key: 'speed', label: 'Speed' },
+    { key: 'initiative', label: 'Initiative' }
+];
 
-  function scoreColor(score) {
-    // score is 0-10
-    if (score >= 8) return { color: 'var(--green)', bg: 'var(--green-dim)' };
-    if (score >= 5) return { color: 'var(--yellow)', bg: 'var(--yellow-dim)' };
-    return { color: 'var(--red)', bg: 'var(--red-dim)' };
-  }
+// ---------- PIN ----------
+document.getElementById('pin-submit').addEventListener('click', authenticatePIN);
+document.getElementById('pin-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') authenticatePIN();
+});
 
-  function pct(score) {
-    return Math.round((score / 10) * 100);
-  }
+function authenticatePIN() {
+    const pinInput = document.getElementById('pin-input');
+    const errorDiv = document.getElementById('pin-error');
+    const pin = pinInput.value;
+    if (!pin) { errorDiv.textContent = 'Enter PIN'; return; }
+    if (pin === EXPECTED_PIN) {
+        sessionStorage.setItem('markus-auth', 'true');
+        showDashboard();
+        loadReports();
+    } else {
+        errorDiv.textContent = 'Invalid PIN';
+        pinInput.value = '';
+        pinInput.focus();
+    }
+}
 
-  function formatDate(dateStr) {
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+function checkAuthentication() {
+    if (sessionStorage.getItem('markus-auth') !== 'true') {
+        document.getElementById('pin-gate').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('pin-input').focus();
+    } else {
+        showDashboard();
+        loadReports();
+    }
+}
 
-  function formatTimestamp(ts) {
+function showDashboard() {
+    document.getElementById('pin-gate').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('markus-auth');
+    location.reload();
+});
+
+// ---------- Helpers ----------
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatDate(dateStr) {
+    const date = new Date((dateStr || '') + 'T00:00:00');
+    if (isNaN(date)) return dateStr || '';
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateShort(dateStr) {
+    const date = new Date((dateStr || '') + 'T00:00:00');
+    if (isNaN(date)) return dateStr || '';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatTimestamp(ts) {
     if (!ts) return '';
     const d = new Date(ts);
-    return d.toLocaleString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: true
-    });
-  }
+    if (isNaN(d)) return ts; // already human-readable
+    return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+}
 
-  function metricLabel(key) {
-    const labels = {
-      response_quality: 'Response Quality',
-      cost_efficiency: 'Cost Efficiency',
-      task_completion: 'Task Completion',
-      autonomy: 'Autonomy',
-      speed: 'Speed',
-      initiative: 'Initiative'
-    };
-    return labels[key] || key;
-  }
+// One-decimal number, trimming trailing .0
+function fmt1(n) {
+    if (typeof n !== 'number' || isNaN(n)) return '—';
+    return (Math.round(n * 10) / 10).toString();
+}
 
-  function severityClass(sev) {
-    const map = { info: 'badge-info', warning: 'badge-warning', error: 'badge-error', success: 'badge-success' };
-    return map[sev] || 'badge-info';
-  }
+// Read a metric score (supports {score,...} objects or bare numbers)
+function metricScore(scores, key) {
+    if (!scores) return null;
+    const v = scores[key];
+    if (typeof v === 'number') return v;
+    if (v && typeof v.score === 'number') return v.score;
+    return null;
+}
 
-  function statusClass(status) {
-    const map = { pending: 'status-pending', approved: 'status-approved', rejected: 'status-rejected' };
-    return map[status] || 'status-pending';
-  }
+function metricDetails(scores, key) {
+    const v = scores && scores[key];
+    return v && typeof v === 'object' ? (v.details || '') : '';
+}
 
-  // ── Export ────────────────────────────────────────────────
-  function exportReport(report, format) {
-    let content = '';
-    
-    if (format === 'json') {
-      content = JSON.stringify(report, null, 2);
-    } else if (format === 'text') {
-      content = `Markus Report — ${formatDate(report.date)}\n`;
-      content += `${formatTimestamp(report.timestamp)}\n`;
-      content += `Composite: ${pct(report.composite)}%\n\n`;
-      
-      content += 'METRICS\n';
-      Object.entries(report.scores).forEach(([key, data]) => {
-        content += `${metricLabel(key)}: ${pct(data.score)}%\n`;
-      });
-      
-      if (report.findings && report.findings.length) {
-        content += '\nFINDINGS\n';
-        report.findings.forEach(f => {
-          content += `[${f.severity.toUpperCase()}] ${f.message}\n`;
-        });
-      }
+// Composite on a 0–10 scale
+function compositeScore(report) {
+    if (!report) return null;
+    if (typeof report.composite === 'number') return report.composite;
+    if (report.scores) {
+        let sum = 0, wsum = 0;
+        for (const m of METRICS) {
+            const s = metricScore(report.scores, m.key);
+            if (s === null) continue;
+            const w = (report.scores[m.key] && report.scores[m.key].weight) || 1;
+            sum += s * w; wsum += w;
+        }
+        if (wsum) return sum / wsum;
     }
-    
-    navigator.clipboard.writeText(content).then(() => {
-      const btn = format === 'json' ? document.getElementById('export-json-btn') : document.getElementById('export-text-btn');
-      if (btn) {
-        const orig = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = orig, 2000);
-      }
-    });
-  }
+    return null;
+}
 
-  // ── DOM refs ──────────────────────────────────────────────
-  const $pinScreen = document.getElementById('pin-screen');
-  const $pinInput = document.getElementById('pin-input');
-  const $pinSubmit = document.getElementById('pin-submit');
-  const $pinError = document.getElementById('pin-error');
-  const $app = document.getElementById('app');
-  const $hamburger = document.getElementById('hamburger');
-  const $sidebar = document.getElementById('sidebar');
-  const $sidebarOverlay = document.getElementById('sidebar-overlay');
-  const $sidebarClose = document.getElementById('sidebar-close');
-  const $reportList = document.getElementById('report-list');
-  const $reportContent = document.getElementById('report-content');
-  const $emptyState = document.getElementById('empty-state');
-  const $reportView = document.getElementById('report-view');
-  const $signOut = document.getElementById('sign-out');
+function deltaMarkup(delta) {
+    if (delta === null || isNaN(delta)) return '<span class="trend flat">—</span>';
+    const r = Math.round(delta * 10) / 10;
+    if (r > 0) return `<span class="trend up">▲ ${fmt1(r)}</span>`;
+    if (r < 0) return `<span class="trend down">▼ ${fmt1(Math.abs(r))}</span>`;
+    return '<span class="trend flat">±0</span>';
+}
 
-  let reports = [];
-  let manifest = [];
+function deltaText(delta) {
+    if (delta === null || isNaN(delta)) return 'n/a';
+    const r = Math.round(delta * 10) / 10;
+    if (r > 0) return `+${fmt1(r)}`;
+    if (r < 0) return `-${fmt1(Math.abs(r))}`;
+    return '0';
+}
 
-  // ── PIN Auth ──────────────────────────────────────────────
-  async function checkPin(pin) {
-    const hash = await sha256(pin);
-    return hash === PIN_HASH;
-  }
+// info | warning | error → css class; anything else → info
+function severityClass(sev) {
+    const s = String(sev || 'info').toLowerCase();
+    return ['success', 'warning', 'error', 'info'].includes(s) ? s : 'info';
+}
 
-  async function handlePinSubmit() {
-    const pin = $pinInput.value;
-    if (await checkPin(pin)) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      $pinScreen.classList.add('hidden');
-      $app.classList.remove('hidden');
-      loadReports();
-    } else {
-      $pinError.textContent = 'Incorrect code';
-      $pinInput.classList.add('shake');
-      setTimeout(() => $pinInput.classList.remove('shake'), 400);
-      $pinInput.value = '';
-      $pinInput.focus();
-    }
-  }
+// ---------- Load ----------
+let allReports = []; // newest first
 
-  $pinSubmit.addEventListener('click', handlePinSubmit);
-  $pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handlePinSubmit(); });
-
-  $signOut.addEventListener('click', () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    $app.classList.add('hidden');
-    $pinScreen.classList.remove('hidden');
-    $pinInput.value = '';
-    $pinError.textContent = '';
-    $pinInput.focus();
-  });
-
-  // Check session
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    $pinScreen.classList.add('hidden');
-    $app.classList.remove('hidden');
-    loadReports();
-  } else {
-    $pinInput.focus();
-  }
-
-  // ── Sidebar Toggle ────────────────────────────────────────
-  function openSidebar() {
-    $sidebar.classList.add('open');
-    $sidebarOverlay.classList.remove('hidden');
-  }
-  function closeSidebar() {
-    $sidebar.classList.remove('open');
-    $sidebarOverlay.classList.add('hidden');
-  }
-
-  $hamburger.addEventListener('click', openSidebar);
-  $sidebarClose.addEventListener('click', closeSidebar);
-  $sidebarOverlay.addEventListener('click', closeSidebar);
-
-  // ── Load Reports ──────────────────────────────────────────
-  async function loadReports() {
+async function loadReports() {
+    const listContainer = document.getElementById('reports-list');
     try {
-      const res = await fetch('data/manifest.json?t=' + Date.now());
-      manifest = await res.json();
-    } catch {
-      manifest = [];
+        const manifestResponse = await fetch('./data/manifest.json');
+        if (!manifestResponse.ok) throw new Error('Could not load manifest');
+        const manifest = await manifestResponse.json();
+        const files = Array.isArray(manifest) ? manifest : (manifest.reports || []);
+
+        const reports = [];
+        for (const file of files) {
+            try {
+                const response = await fetch(`./data/${file}`);
+                if (response.ok) reports.push(await response.json());
+            } catch (e) {
+                console.error(`Failed to load ${file}`, e);
+            }
+        }
+
+        reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+        allReports = reports;
+
+        listContainer.innerHTML = '';
+        reports.forEach((report, idx) => {
+            const item = document.createElement('li');
+            item.className = 'report-list-item' + (idx === 0 ? ' active' : '');
+            const comp = compositeScore(report);
+            const prior = reports[idx + 1];
+            const delta = prior ? (comp - compositeScore(prior)) : null;
+            item.innerHTML = `
+                <span class="report-date-label">${escapeHtml(formatDateShort(report.date))}</span>
+                <span class="report-score"><span class="pct">${fmt1(comp)}</span>/10 ${deltaMarkup(delta)}</span>
+            `;
+            item.addEventListener('click', () => selectReport(idx, item));
+            listContainer.appendChild(item);
+        });
+
+        if (reports.length > 0) {
+            selectReport(0, listContainer.querySelector('.report-list-item'));
+        } else {
+            listContainer.innerHTML = '<li class="loading">No reports yet</li>';
+        }
+    } catch (error) {
+        console.error('Error loading reports:', error);
+        listContainer.innerHTML = '<li class="loading">Error loading reports</li>';
     }
+}
 
-    if (!manifest.length) {
-      $emptyState.classList.remove('hidden');
-      $reportView.classList.add('hidden');
-      return;
-    }
+// ---------- Select / Render ----------
+function selectReport(idx, listItem) {
+    document.querySelectorAll('.report-list-item').forEach(el => el.classList.remove('active'));
+    if (listItem) listItem.classList.add('active');
 
-    // Fetch all reports
-    reports = [];
-    for (const file of manifest) {
-      try {
-        const r = await fetch('data/' + file + '?t=' + Date.now());
-        const data = await r.json();
-        reports.push(data);
-      } catch { /* skip broken files */ }
-    }
+    const report = allReports[idx];
+    const prior = allReports[idx + 1] || null;
 
-    // Sort newest first
-    reports.sort((a, b) => b.date.localeCompare(a.date));
+    const detailPane = document.getElementById('reports-detail');
+    detailPane.innerHTML = renderReportDetail(report, prior);
 
-    // Build sidebar
-    renderSidebar();
-
-    // Show first report
-    if (reports.length) {
-      $emptyState.classList.add('hidden');
-      showReport(0);
-    }
-  }
-
-  // ── Render Sidebar ────────────────────────────────────────
-  function renderSidebar() {
-    $reportList.innerHTML = '';
-    reports.forEach((r, i) => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <div class="date">${formatDate(r.date)}</div>
-        <div class="score">${pct(r.composite)}% composite</div>
-      `;
-      li.addEventListener('click', () => {
-        showReport(i);
-        closeSidebar();
-      });
-      $reportList.appendChild(li);
+    requestAnimationFrame(() => {
+        detailPane.querySelectorAll('.score-fill').forEach(el => {
+            el.style.width = el.dataset.width + '%';
+        });
     });
-  }
 
-  // ── Render Report ─────────────────────────────────────────
-  function showReport(index) {
-    const r = reports[index];
+    document.getElementById('copy-md-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, buildMarkdown(report, prior)));
+    document.getElementById('copy-json-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, JSON.stringify(report, null, 2)));
+}
 
-    // Update sidebar active
-    const items = $reportList.querySelectorAll('li');
-    items.forEach((li, i) => li.classList.toggle('active', i === index));
+function renderReportDetail(report, prior) {
+    const comp = compositeScore(report);
+    const priorComp = prior ? compositeScore(prior) : null;
+    const compDelta = priorComp === null ? null : comp - priorComp;
 
-    const compositeColor = scoreColor(r.composite);
-
-    // Build metrics rows
-    const metricsHTML = Object.entries(r.scores).map(([key, data]) => {
-      const sc = scoreColor(data.score);
-      return `
-        <div class="metric-row">
-          <span class="metric-name">${metricLabel(key)}</span>
-          <div class="metric-bar-track">
-            <div class="metric-bar-fill" style="width:${pct(data.score)}%;background:${sc.color}"></div>
-          </div>
-          <span class="metric-value" style="color:${sc.color}">${data.score}</span>
-        </div>
-      `;
-    }).join('');
-
-    // Build findings
-    const findingsHTML = (r.findings && r.findings.length)
-      ? r.findings.map(f => `
-          <li class="finding-item">
-            <span class="finding-badge ${severityClass(f.severity)}">${f.severity}</span>
-            <span class="finding-text">${f.message}</span>
-          </li>
-        `).join('')
-      : '<li class="finding-item"><span class="finding-text muted">No findings this run.</span></li>';
-
-    // Build proposals
-    const proposalsHTML = (r.proposals && r.proposals.length)
-      ? r.proposals.map(p => `
-          <li class="proposal-item">
-            <div class="proposal-header">
-              <span class="proposal-type">${p.type}</span>
-              <span class="proposal-title">${p.title}</span>
-              <span class="status-badge ${statusClass(p.status)}">${p.status}</span>
+    let html = `
+        <div class="report-detail">
+            <div class="report-header">
+                <div>
+                    <div class="report-title">${escapeHtml(formatDate(report.date))}</div>
+                    <div class="report-meta">${escapeHtml(formatTimestamp(report.timestamp))}${prior ? ' · vs ' + escapeHtml(formatDateShort(prior.date)) : ''}</div>
+                </div>
+                <div class="report-avg">
+                    <span class="big">${fmt1(comp)}<span class="denom">/10</span></span>
+                    <span class="lab">composite<br>${deltaMarkup(compDelta)}</span>
+                </div>
+                <div class="header-actions">
+                    <button id="copy-md-btn" class="export-btn primary">Copy report (Markdown)</button>
+                    <button id="copy-json-btn" class="export-btn">Copy JSON</button>
+                </div>
             </div>
-            ${p.summary ? `<div class="proposal-summary">${p.summary}</div>` : ''}
-          </li>
-        `).join('')
-      : '<li class="proposal-item"><span class="proposal-summary">No proposals this run.</span></li>';
-
-    // Build modules
-    const modulesHTML = (r.modules_run && r.modules_run.length)
-      ? r.modules_run.map(m => `<span class="module-tag">${m}</span>`).join('')
-      : '<span class="module-tag">—</span>';
-
-    $reportView.innerHTML = `
-      <div class="report-header">
-        <div class="report-date">${formatTimestamp(r.timestamp)}</div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div class="report-composite">
-            <span class="composite-score" style="color:${compositeColor.color}">${pct(r.composite)}%</span>
-            <span class="composite-label">composite score</span>
-          </div>
-          <div class="export-buttons">
-            <button id="export-json-btn" class="export-btn">JSON</button>
-            <button id="export-text-btn" class="export-btn">Text</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-head">North Star Metrics</div>
-      <div class="metrics-table">${metricsHTML}</div>
-
-      <div class="section-head">Findings</div>
-      <ul class="findings-list">${findingsHTML}</ul>
-
-      <div class="section-head">Proposals</div>
-      <ul class="proposals-list">${proposalsHTML}</ul>
-
-      <div class="section-head">Modules Executed</div>
-      <div class="modules-tags">${modulesHTML}</div>
     `;
 
-    document.getElementById('export-json-btn').addEventListener('click', () => exportReport(r, 'json'));
-    document.getElementById('export-text-btn').addEventListener('click', () => exportReport(r, 'text'));
-    $reportView.classList.remove('hidden');
-  }
-})();
+    // Scores: bars + trend + detail
+    if (report.scores) {
+        html += `<div class="section"><div class="section-title">North Star Metrics</div><div class="scores-list">`;
+        for (const m of METRICS) {
+            const score = metricScore(report.scores, m.key);
+            if (score === null) continue;
+            const priorScore = prior ? metricScore(prior.scores, m.key) : null;
+            const delta = priorScore === null ? null : score - priorScore;
+            const details = metricDetails(report.scores, m.key);
+            html += `
+                <div class="score-item">
+                    <div class="score-top">
+                        <span class="score-name">${escapeHtml(m.label)}</span>
+                        <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span>${deltaMarkup(delta)}</span>
+                    </div>
+                    <div class="score-track"><div class="score-fill" data-width="${Math.max(0, Math.min(100, score * 10))}"></div></div>
+                    ${details ? `<div class="score-detail">${escapeHtml(details)}</div>` : ''}
+                </div>
+            `;
+        }
+        html += `</div></div>`;
+    }
+
+    // Findings
+    if (report.findings && report.findings.length) {
+        html += `<div class="section"><div class="section-title">Findings</div>`;
+        for (const f of report.findings) {
+            const sev = severityClass(f.severity);
+            const type = f.type || 'note';
+            html += `
+                <div class="finding-item ${sev}">
+                    <div class="finding-title"><span class="finding-badge">${escapeHtml(type)}</span><span class="finding-sev ${sev}">${escapeHtml(f.severity || 'info')}</span></div>
+                    <div class="finding-description">${escapeHtml(f.message || f.description || '')}</div>
+                </div>
+            `;
+        }
+        html += `</div>`;
+    }
+
+    // Proposals
+    if (report.proposals && report.proposals.length) {
+        html += `<div class="section"><div class="section-title">Proposals</div>`;
+        for (const p of report.proposals) {
+            const status = (p.status || 'pending').toLowerCase();
+            const meta = [p.type, p.id].filter(Boolean).map(escapeHtml).join(' · ');
+            html += `
+                <div class="proposal-item">
+                    <div class="proposal-header">
+                        <div class="proposal-title">${escapeHtml(p.title || '')}</div>
+                        <span class="proposal-status ${escapeHtml(status)}">${escapeHtml(status)}</span>
+                    </div>
+                    <div class="proposal-description">${escapeHtml(p.summary || p.description || '')}</div>
+                    ${meta ? `<div class="proposal-meta">${meta}</div>` : ''}
+                </div>
+            `;
+        }
+        html += `</div>`;
+    }
+
+    // Modules run
+    if (report.modules_run && report.modules_run.length) {
+        html += `<div class="section"><div class="section-title">Modules Run</div><div class="module-chips">`;
+        for (const mod of report.modules_run) {
+            html += `<span class="chip">${escapeHtml(mod)}</span>`;
+        }
+        html += `</div></div>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+// ---------- Markdown export ----------
+function buildMarkdown(report, prior) {
+    const comp = compositeScore(report);
+    const priorComp = prior ? compositeScore(prior) : null;
+    const compDelta = priorComp === null ? null : comp - priorComp;
+
+    const lines = [];
+    lines.push(`# Markus Self-Enhancement Report — ${formatDateShort(report.date)}`);
+    const metaBits = [formatTimestamp(report.timestamp), `Composite ${fmt1(comp)}/10 (${deltaText(compDelta)} vs prior)`].filter(Boolean);
+    lines.push(`_${metaBits.join(' · ')}_`);
+    lines.push('');
+
+    if (report.scores) {
+        lines.push('## North Star Metrics');
+        lines.push('');
+        lines.push('| Metric | Score | Δ vs prior | Notes |');
+        lines.push('| --- | --- | --- | --- |');
+        for (const m of METRICS) {
+            const score = metricScore(report.scores, m.key);
+            if (score === null) continue;
+            const priorScore = prior ? metricScore(prior.scores, m.key) : null;
+            const delta = priorScore === null ? null : score - priorScore;
+            const details = metricDetails(report.scores, m.key).replace(/\|/g, '\\|');
+            lines.push(`| ${m.label} | ${fmt1(score)}/10 | ${deltaText(delta)} | ${details} |`);
+        }
+        lines.push('');
+    }
+
+    if (report.findings && report.findings.length) {
+        lines.push('## Findings');
+        lines.push('');
+        for (const f of report.findings) {
+            lines.push(`- **[${(f.severity || 'info').toUpperCase()}] ${f.type || 'note'}** — ${f.message || f.description || ''}`);
+        }
+        lines.push('');
+    }
+
+    if (report.proposals && report.proposals.length) {
+        lines.push('## Proposals');
+        lines.push('');
+        for (const p of report.proposals) {
+            const tag = [p.type, p.id].filter(Boolean).join(' · ');
+            lines.push(`- **${p.title || ''}** _(${p.status || 'pending'}${tag ? ' · ' + tag : ''})_ — ${p.summary || p.description || ''}`);
+        }
+        lines.push('');
+    }
+
+    if (report.modules_run && report.modules_run.length) {
+        lines.push('## Modules Run');
+        lines.push('');
+        lines.push(report.modules_run.map(m => `\`${m}\``).join(', '));
+        lines.push('');
+    }
+
+    return lines.join('\n').trim() + '\n';
+}
+
+function copyOut(btn, content) {
+    const original = btn.textContent;
+    const done = () => { btn.textContent = 'Copied!'; setTimeout(() => (btn.textContent = original), 1600); };
+    const fail = () => { btn.textContent = 'Copy failed'; setTimeout(() => (btn.textContent = original), 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(content).then(done).catch(() => fallbackCopy(content, done, fail));
+    } else {
+        fallbackCopy(content, done, fail);
+    }
+}
+
+function fallbackCopy(content, done, fail) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+    } catch (e) { fail(); }
+}
+
+// ---------- Init ----------
+window.addEventListener('load', checkAuthentication);

@@ -1,59 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markus — System Reports</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markus Reports Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- PIN Screen -->
-  <div id="pin-screen">
-    <div class="pin-box">
-      <div class="pin-icon">M</div>
-      <h1>Markus Reports</h1>
-      <p>Enter access code</p>
-      <input type="password" id="pin-input" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="------">
-      <button id="pin-submit">Unlock</button>
-      <div id="pin-error"></div>
+    <div id="pin-gate" class="pin-gate">
+        <div class="pin-container">
+            <div class="pin-header">
+                <h1>Markus Reports</h1>
+                <p>Self-Enhancement Log</p>
+            </div>
+            <div class="pin-input-group">
+                <input 
+                    type="password" 
+                    id="pin-input" 
+                    class="pin-input" 
+                    placeholder="PIN" 
+                    maxlength="6"
+                    autocomplete="off"
+                >
+                <button id="pin-submit" class="pin-submit">→</button>
+            </div>
+            <div id="pin-error" class="pin-error"></div>
+        </div>
     </div>
-  </div>
 
-  <!-- Main App -->
-  <div id="app" class="hidden">
-    <!-- Mobile header -->
-    <header class="top-bar">
-      <button id="hamburger" aria-label="Toggle menu">
-        <span></span><span></span><span></span>
-      </button>
-      <h1>Markus Reports</h1>
-      <button id="sign-out" class="btn-ghost">Sign out</button>
-    </header>
+    <div id="dashboard" class="dashboard hidden">
+        <header class="dashboard-header">
+            <h1>Markus Reports<span class="sub">Self-Enhancement Log</span></h1>
+            <button id="logout-btn" class="logout-btn">Sign Out</button>
+        </header>
 
-    <!-- Sidebar overlay for mobile -->
-    <div id="sidebar-overlay" class="hidden"></div>
+        <div class="dashboard-main">
+            <aside class="reports-sidebar">
+                <div class="sidebar-label">Timeline</div>
+                <ul class="reports-list" id="reports-list">
+                    <li class="loading">Loading...</li>
+                </ul>
+            </aside>
 
-    <!-- Sidebar -->
-    <nav id="sidebar">
-      <div class="sidebar-header">
-        <span class="sidebar-title">Report Log</span>
-        <button id="sidebar-close" aria-label="Close menu">&times;</button>
-      </div>
-      <ul id="report-list"></ul>
-    </nav>
+            <main class="reports-detail" id="reports-detail">
+                <div class="no-report-selected">Select a report to view details</div>
+            </main>
+        </div>
+    </div>
 
-    <!-- Report content -->
-    <main id="report-content">
-      <div id="empty-state">
-        <p class="mono">No reports yet.</p>
-        <p class="muted">Reports appear here after each 3 AM self-enhance run.</p>
-      </div>
-      <article id="report-view" class="hidden"></article>
-    </main>
-  </div>
-
-  <script src="report.js"></script>
+    <script src="report.js"></script>
 </body>
 </html>
