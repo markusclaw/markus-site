@@ -28,6 +28,9 @@ async function authenticatePIN() {
     }
 
     const hash = await hashPIN(pin);
+    console.log('Entered PIN:', pin);
+    console.log('Computed hash:', hash);
+    console.log('Expected hash:', EXPECTED_PIN_HASH);
     if (hash === EXPECTED_PIN_HASH) {
         sessionStorage.setItem('markus-auth', 'true');
         showDashboard();
