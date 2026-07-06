@@ -123,6 +123,65 @@ function selectReport(report, listItem) {
     // Render detail pane
     const detailPane = document.getElementById('reports-detail');
     detailPane.innerHTML = renderReportDetail(report);
+    
+    // Attach event listeners for export buttons
+    document.getElementById('export-json-btn')?.addEventListener('click', () => exportReport(report, 'json'));
+    document.getElementById('export-text-btn')?.addEventListener('click', () => exportReport(report, 'text'));
+}
+
+function exportReport(report, format) {
+    let content = '';
+    
+    if (format === 'json') {
+        content = JSON.stringify(report, null, 2);
+    } else if (format === 'text') {
+        content = `Markus Report — ${formatDate(report.date)}\n`;
+        content += `${report.timestamp || ''}\n`;
+        content += `\n--- North Star Metrics ---\n`;
+        
+        if (report.north_star) {
+            const metrics = [
+                { key: 'response_quality', label: 'Response Quality' },
+                { key: 'cost_efficiency', label: 'Cost Efficiency' },
+                { key: 'task_completion', label: 'Task Completion' },
+                { key: 'autonomy', label: 'Autonomy' },
+                { key: 'speed', label: 'Speed' },
+                { key: 'initiative', label: 'Initiative' }
+            ];
+            for (const m of metrics) {
+                const score = report.north_star[m.key] || 0;
+                content += `${m.label}: ${score}%\n`;
+            }
+        }
+        
+        if (report.top_findings && report.top_findings.length > 0) {
+            content += `\n--- Findings ---\n`;
+            for (const finding of report.top_findings) {
+                content += `[${finding.type.toUpperCase()}] ${finding.title}\n`;
+                content += `${finding.description}\n\n`;
+            }
+        }
+        
+        if (report.proposals && report.proposals.length > 0) {
+            content += `\n--- Proposals ---\n`;
+            for (const proposal of report.proposals) {
+                content += `${proposal.title} (${proposal.status})\n`;
+                content += `${proposal.description}\n\n`;
+            }
+        }
+    }
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(content).then(() => {
+        const btn = document.getElementById(`export-${format}-btn`);
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
+        alert('Failed to copy to clipboard');
+    });
 }
 
 function renderReportDetail(report) {
@@ -131,8 +190,16 @@ function renderReportDetail(report) {
     let html = `
         <div class="report-detail">
             <div class="report-header">
-                <div class="report-title">${formatDate(report.date)}</div>
-                <div class="report-meta">${report.timestamp || ''} | Average Score: ${avgScore}%</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <div class="report-title">${formatDate(report.date)}</div>
+                        <div class="report-meta">${report.timestamp || ''} | Average Score: ${avgScore}%</div>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button id="export-json-btn" class="export-btn">Export JSON</button>
+                        <button id="export-text-btn" class="export-btn">Export Text</button>
+                    </div>
+                </div>
             </div>
     `;
 

@@ -148,6 +148,27 @@ body {
     background: var(--bg-tertiary);
 }
 
+/* EXPORT BUTTONS */
+.export-btn {
+    padding: 6px 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.export-btn:hover {
+    opacity: 0.9;
+}
+
+.export-btn:active {
+    opacity: 0.8;
+}
+
 .dashboard-main {
     display: flex;
     flex: 1;
