@@ -59,6 +59,40 @@
     return map[status] || 'status-pending';
   }
 
+  // ── Export ────────────────────────────────────────────────
+  function exportReport(report, format) {
+    let content = '';
+    
+    if (format === 'json') {
+      content = JSON.stringify(report, null, 2);
+    } else if (format === 'text') {
+      content = `Markus Report — ${formatDate(report.date)}\n`;
+      content += `${formatTimestamp(report.timestamp)}\n`;
+      content += `Composite: ${pct(report.composite)}%\n\n`;
+      
+      content += 'METRICS\n';
+      Object.entries(report.scores).forEach(([key, data]) => {
+        content += `${metricLabel(key)}: ${pct(data.score)}%\n`;
+      });
+      
+      if (report.findings && report.findings.length) {
+        content += '\nFINDINGS\n';
+        report.findings.forEach(f => {
+          content += `[${f.severity.toUpperCase()}] ${f.message}\n`;
+        });
+      }
+    }
+    
+    navigator.clipboard.writeText(content).then(() => {
+      const btn = format === 'json' ? document.getElementById('export-json-btn') : document.getElementById('export-text-btn');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+      }
+    });
+  }
+
   // ── DOM refs ──────────────────────────────────────────────
   const $pinScreen = document.getElementById('pin-screen');
   const $pinInput = document.getElementById('pin-input');
@@ -246,9 +280,15 @@
     $reportView.innerHTML = `
       <div class="report-header">
         <div class="report-date">${formatTimestamp(r.timestamp)}</div>
-        <div class="report-composite">
-          <span class="composite-score" style="color:${compositeColor.color}">${pct(r.composite)}%</span>
-          <span class="composite-label">composite score</span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div class="report-composite">
+            <span class="composite-score" style="color:${compositeColor.color}">${pct(r.composite)}%</span>
+            <span class="composite-label">composite score</span>
+          </div>
+          <div class="export-buttons">
+            <button id="export-json-btn" class="export-btn">JSON</button>
+            <button id="export-text-btn" class="export-btn">Text</button>
+          </div>
         </div>
       </div>
 
@@ -265,6 +305,8 @@
       <div class="modules-tags">${modulesHTML}</div>
     `;
 
+    document.getElementById('export-json-btn').addEventListener('click', () => exportReport(r, 'json'));
+    document.getElementById('export-text-btn').addEventListener('click', () => exportReport(r, 'text'));
     $reportView.classList.remove('hidden');
   }
 })();
