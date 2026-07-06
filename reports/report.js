@@ -1,6 +1,6 @@
-// Markus Reports Dashboard - Report Loading & Rendering
+// Markus Reports Log Viewer
 
-// SHA-256 implementation (simplified for client-side PIN hashing)
+// SHA-256 hash for PIN validation
 async function hashPIN(pin) {
     const encoder = new TextEncoder();
     const data = encoder.encode(pin);
@@ -9,10 +9,9 @@ async function hashPIN(pin) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Expected PIN hash (SHA-256 of "000000")
 const EXPECTED_PIN_HASH = 'c775e1d4f67f1c9dd9a48fae0db2e2e0eb0e09c38ad2eef915e1fcf4ebe1502';
 
-// PIN Gate Logic
+// PIN Authentication
 document.getElementById('pin-submit').addEventListener('click', authenticatePIN);
 document.getElementById('pin-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') authenticatePIN();
@@ -24,13 +23,13 @@ async function authenticatePIN() {
     const pin = pinInput.value;
 
     if (!pin) {
-        errorDiv.textContent = 'Please enter a PIN';
+        errorDiv.textContent = 'Enter PIN';
         return;
     }
 
     const hash = await hashPIN(pin);
     if (hash === EXPECTED_PIN_HASH) {
-        sessionStorage.setItem('markus-reports-authenticated', 'true');
+        sessionStorage.setItem('markus-auth', 'true');
         showDashboard();
         loadReports();
     } else {
@@ -40,15 +39,8 @@ async function authenticatePIN() {
     }
 }
 
-// Logout
-document.getElementById('logout-btn').addEventListener('click', () => {
-    sessionStorage.removeItem('markus-reports-authenticated');
-    location.reload();
-});
-
-// Check if authenticated
 function checkAuthentication() {
-    if (sessionStorage.getItem('markus-reports-authenticated') !== 'true') {
+    if (sessionStorage.getItem('markus-auth') !== 'true') {
         document.getElementById('pin-gate').classList.remove('hidden');
         document.getElementById('dashboard').classList.add('hidden');
         document.getElementById('pin-input').focus();
@@ -62,131 +54,130 @@ function showDashboard() {
     document.getElementById('dashboard').classList.remove('hidden');
 }
 
-// Load & Render Reports
-async function loadReports() {
-    const container = document.getElementById('reports-container');
-    const loadingDiv = document.getElementById('loading');
-    const noReportsDiv = document.getElementById('no-reports');
+// Logout
+document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('markus-auth');
+    location.reload();
+});
 
+// Load Reports
+let allReports = [];
+
+async function loadReports() {
+    const listContainer = document.getElementById('reports-list');
+    
     try {
-        // Load manifest
         const manifestResponse = await fetch('./data/manifest.json');
         if (!manifestResponse.ok) throw new Error('Could not load manifest');
         const manifest = await manifestResponse.json();
 
-        if (!manifest.reports || manifest.reports.length === 0) {
-            loadingDiv.classList.add('hidden');
-            noReportsDiv.classList.remove('hidden');
-            return;
-        }
-
-        // Load all report files
         const reports = [];
-        for (const reportFile of manifest.reports) {
+        for (const file of manifest.reports || []) {
             try {
-                const response = await fetch(`./data/${reportFile}`);
+                const response = await fetch(`./data/${file}`);
                 if (response.ok) {
-                    const report = await response.json();
-                    reports.push(report);
+                    reports.push(await response.json());
                 }
             } catch (e) {
-                console.error(`Failed to load ${reportFile}:`, e);
+                console.error(`Failed to load ${file}`, e);
             }
         }
 
-        // Sort by date (newest first)
+        // Sort newest first
         reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+        allReports = reports;
 
-        if (reports.length === 0) {
-            loadingDiv.classList.add('hidden');
-            noReportsDiv.classList.remove('hidden');
-            return;
-        }
-
-        // Render reports
-        container.innerHTML = '';
-        reports.forEach(report => {
-            container.appendChild(createReportCard(report));
+        // Render list
+        listContainer.innerHTML = '';
+        reports.forEach((report, idx) => {
+            const item = document.createElement('li');
+            item.className = 'report-list-item' + (idx === 0 ? ' active' : '');
+            
+            const avgScore = calculateAvgScore(report);
+            item.innerHTML = `
+                <span class="report-date-label">${formatDate(report.date)}</span>
+                <span class="report-score">Score: ${avgScore}%</span>
+            `;
+            
+            item.addEventListener('click', () => selectReport(report, item));
+            listContainer.appendChild(item);
         });
 
-        // Update stats
-        updateStats(reports);
-
-        loadingDiv.classList.add('hidden');
+        // Show first report by default
+        if (reports.length > 0) {
+            selectReport(reports[0], listContainer.querySelector('.report-list-item'));
+        }
     } catch (error) {
         console.error('Error loading reports:', error);
-        loadingDiv.textContent = 'Error loading reports';
+        listContainer.innerHTML = '<li class="loading">Error loading reports</li>';
     }
 }
 
-function createReportCard(report) {
-    const card = document.createElement('div');
-    card.className = 'report-card';
-
-    const header = document.createElement('div');
-    header.className = 'report-card-header';
-    header.innerHTML = `
-        <div>
-            <div class="report-date">${formatDate(report.date)}</div>
-            <div class="report-timestamp">${report.timestamp || ''}</div>
-        </div>
-        <div class="report-toggle">▼</div>
-    `;
-
-    const content = document.createElement('div');
-    content.className = 'report-card-content';
-    content.innerHTML = renderReportContent(report);
-
-    card.appendChild(header);
-    card.appendChild(content);
-
-    // Toggle expansion
-    header.addEventListener('click', () => {
-        card.classList.toggle('expanded');
-    });
-
-    return card;
+function calculateAvgScore(report) {
+    if (!report.north_star) return 0;
+    const scores = Object.values(report.north_star).filter(v => typeof v === 'number');
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 }
 
-function renderReportContent(report) {
-    let html = '';
+function formatDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function selectReport(report, listItem) {
+    // Update active state
+    document.querySelectorAll('.report-list-item').forEach(el => el.classList.remove('active'));
+    listItem.classList.add('active');
+
+    // Render detail pane
+    const detailPane = document.getElementById('reports-detail');
+    detailPane.innerHTML = renderReportDetail(report);
+}
+
+function renderReportDetail(report) {
+    const avgScore = calculateAvgScore(report);
+    
+    let html = `
+        <div class="report-detail">
+            <div class="report-header">
+                <div class="report-title">${formatDate(report.date)}</div>
+                <div class="report-meta">${report.timestamp || ''} | Average Score: ${avgScore}%</div>
+            </div>
+    `;
 
     // North Star Scores
     if (report.north_star) {
-        html += '<div class="north-star-section">';
-        html += '<div class="section-title">North Star Metrics</div>';
-
-        const dimensions = [
-            { key: 'response_quality', label: 'Response Quality', color: 'good' },
-            { key: 'cost_efficiency', label: 'Cost Efficiency', color: 'good' },
-            { key: 'task_completion', label: 'Task Completion', color: 'good' },
-            { key: 'autonomy', label: 'Autonomy', color: 'good' },
-            { key: 'speed', label: 'Speed', color: 'good' },
-            { key: 'initiative', label: 'Initiative', color: 'good' }
+        html += `
+            <div class="section">
+                <div class="section-title">North Star Metrics</div>
+                <div class="scores-grid">
+        `;
+        
+        const metrics = [
+            { key: 'response_quality', label: 'Response Quality' },
+            { key: 'cost_efficiency', label: 'Cost Efficiency' },
+            { key: 'task_completion', label: 'Task Completion' },
+            { key: 'autonomy', label: 'Autonomy' },
+            { key: 'speed', label: 'Speed' },
+            { key: 'initiative', label: 'Initiative' }
         ];
 
-        for (const dim of dimensions) {
-            const score = report.north_star[dim.key] || 0;
-            const color = scoreToColor(score);
+        for (const m of metrics) {
+            const score = report.north_star[m.key] || 0;
             html += `
-                <div class="score-row">
-                    <div class="score-label">
-                        <span class="score-label-name">${dim.label}</span>
-                        <span class="score-label-value">${score}%</span>
-                    </div>
-                    <div class="score-bar">
-                        <div class="score-fill ${color}" style="width: ${score}%"></div>
-                    </div>
+                <div class="score-item">
+                    <div class="score-name">${m.label}</div>
+                    <div class="score-value">${score}%</div>
                 </div>
             `;
         }
-        html += '</div>';
+        
+        html += `</div></div>`;
     }
 
     // Top Findings
     if (report.top_findings && report.top_findings.length > 0) {
-        html += '<div class="findings-section">';
-        html += '<div class="section-title">Top Findings</div>';
+        html += `<div class="section"><div class="section-title">Findings</div>`;
         for (const finding of report.top_findings) {
             const type = finding.type || 'info';
             html += `
@@ -196,88 +187,49 @@ function renderReportContent(report) {
                 </div>
             `;
         }
-        html += '</div>';
+        html += `</div>`;
     }
 
     // Proposals
     if (report.proposals && report.proposals.length > 0) {
-        html += '<div class="proposals-section">';
-        html += '<div class="section-title">Pending Proposals</div>';
+        html += `<div class="section"><div class="section-title">Proposals</div>`;
         for (const proposal of report.proposals) {
             const status = proposal.status || 'pending';
             html += `
                 <div class="proposal-item">
                     <div class="proposal-header">
-                        <span class="proposal-title">${proposal.title}</span>
+                        <div class="proposal-title">${proposal.title}</div>
                         <span class="proposal-status ${status}">${status}</span>
                     </div>
                     <div class="proposal-description">${proposal.description}</div>
                 </div>
             `;
         }
-        html += '</div>';
+        html += `</div>`;
     }
 
-    // Raw data (for debugging)
+    // Metadata
     if (report.metadata) {
-        html += '<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border);">';
-        html += '<div class="section-title">Report Details</div>';
-        html += `<pre style="font-size: 11px; color: var(--color-text-secondary); overflow-x: auto; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">${JSON.stringify(report.metadata, null, 2)}</pre>`;
-        html += '</div>';
+        html += `
+            <div class="section">
+                <div class="section-title">Metadata</div>
+                <table class="metadata-table">
+                    <tr><td>Duration</td><td>${report.metadata.run_duration_seconds}s</td></tr>
+                    <tr><td>Modules Executed</td><td>${report.metadata.modules_executed}</td></tr>
+                    <tr><td>Files Processed</td><td>${report.metadata.files_processed}</td></tr>
+                    <tr><td>Git Commits</td><td>${report.metadata.git_commits}</td></tr>
+                    <tr><td>Errors</td><td>${report.metadata.errors}</td></tr>
+                    <tr><td>Warnings</td><td>${report.metadata.warnings}</td></tr>
+                </table>
+            </div>
+        `;
     }
 
+    html += `</div>`;
     return html;
 }
 
-function scoreToColor(score) {
-    if (score >= 90) return 'excellent';
-    if (score >= 75) return 'good';
-    if (score >= 60) return 'warning';
-    return 'critical';
-}
-
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-    });
-}
-
-function updateStats(reports) {
-    document.getElementById('total-reports').textContent = reports.length;
-
-    // Calculate average score
-    let totalScore = 0;
-    let scoreCount = 0;
-    for (const report of reports) {
-        if (report.north_star) {
-            const scores = Object.values(report.north_star).filter(v => typeof v === 'number');
-            totalScore += scores.reduce((a, b) => a + b, 0);
-            scoreCount += scores.length;
-        }
-    }
-    const avgScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
-    document.getElementById('avg-score').textContent = avgScore > 0 ? `${avgScore}%` : '—';
-}
-
-// Date filter
-document.getElementById('date-filter').addEventListener('change', (e) => {
-    const selectedDate = e.target.value;
-    const cards = document.querySelectorAll('.report-card');
-    cards.forEach(card => {
-        if (selectedDate) {
-            const cardDate = card.querySelector('.report-date').textContent;
-            card.style.display = cardDate.includes(selectedDate) ? '' : 'none';
-        } else {
-            card.style.display = '';
-        }
-    });
-});
-
-// Initialize on page load
+// Init
 window.addEventListener('load', () => {
     checkAuthentication();
 });
