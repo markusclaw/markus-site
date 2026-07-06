@@ -1,293 +1,270 @@
-// Markus Reports Log Viewer
+/* ── Markus Reports Dashboard — report.js ────────────────────── */
+(function () {
+  'use strict';
 
-// Simple PIN validation
-const EXPECTED_PIN = '000000';
+  const PIN_HASH = '91b4d142823f7d20c5f08df69122de43f35f057a988d9619f6d3138485c9a203';
+  const SESSION_KEY = 'markus_reports_auth';
 
-// PIN Authentication
-document.getElementById('pin-submit').addEventListener('click', authenticatePIN);
-document.getElementById('pin-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') authenticatePIN();
-});
+  // ── Helpers ───────────────────────────────────────────────
+  async function sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
 
-function authenticatePIN() {
-    const pinInput = document.getElementById('pin-input');
-    const errorDiv = document.getElementById('pin-error');
-    const pin = pinInput.value;
+  function scoreColor(score) {
+    // score is 0-10
+    if (score >= 8) return { color: 'var(--green)', bg: 'var(--green-dim)' };
+    if (score >= 5) return { color: 'var(--yellow)', bg: 'var(--yellow-dim)' };
+    return { color: 'var(--red)', bg: 'var(--red-dim)' };
+  }
 
-    if (!pin) {
-        errorDiv.textContent = 'Enter PIN';
-        return;
-    }
+  function pct(score) {
+    return Math.round((score / 10) * 100);
+  }
 
-    if (pin === EXPECTED_PIN) {
-        sessionStorage.setItem('markus-auth', 'true');
-        showDashboard();
-        loadReports();
-    } else {
-        errorDiv.textContent = 'Invalid PIN';
-        pinInput.value = '';
-        pinInput.focus();
-    }
-}
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
-function checkAuthentication() {
-    if (sessionStorage.getItem('markus-auth') !== 'true') {
-        document.getElementById('pin-gate').classList.remove('hidden');
-        document.getElementById('dashboard').classList.add('hidden');
-        document.getElementById('pin-input').focus();
-    } else {
-        showDashboard();
-    }
-}
-
-function showDashboard() {
-    document.getElementById('pin-gate').classList.add('hidden');
-    document.getElementById('dashboard').classList.remove('hidden');
-}
-
-// Logout
-document.getElementById('logout-btn').addEventListener('click', () => {
-    sessionStorage.removeItem('markus-auth');
-    location.reload();
-});
-
-// Load Reports
-let allReports = [];
-
-async function loadReports() {
-    const listContainer = document.getElementById('reports-list');
-    
-    try {
-        const manifestResponse = await fetch('./data/manifest.json');
-        if (!manifestResponse.ok) throw new Error('Could not load manifest');
-        const manifest = await manifestResponse.json();
-
-        const reports = [];
-        for (const file of manifest.reports || []) {
-            try {
-                const response = await fetch(`./data/${file}`);
-                if (response.ok) {
-                    reports.push(await response.json());
-                }
-            } catch (e) {
-                console.error(`Failed to load ${file}`, e);
-            }
-        }
-
-        // Sort newest first
-        reports.sort((a, b) => new Date(b.date) - new Date(a.date));
-        allReports = reports;
-
-        // Render list
-        listContainer.innerHTML = '';
-        reports.forEach((report, idx) => {
-            const item = document.createElement('li');
-            item.className = 'report-list-item' + (idx === 0 ? ' active' : '');
-            
-            const avgScore = calculateAvgScore(report);
-            item.innerHTML = `
-                <span class="report-date-label">${formatDate(report.date)}</span>
-                <span class="report-score">Score: ${avgScore}%</span>
-            `;
-            
-            item.addEventListener('click', () => selectReport(report, item));
-            listContainer.appendChild(item);
-        });
-
-        // Show first report by default
-        if (reports.length > 0) {
-            selectReport(reports[0], listContainer.querySelector('.report-list-item'));
-        }
-    } catch (error) {
-        console.error('Error loading reports:', error);
-        listContainer.innerHTML = '<li class="loading">Error loading reports</li>';
-    }
-}
-
-function calculateAvgScore(report) {
-    if (!report.north_star) return 0;
-    const scores = Object.values(report.north_star).filter(v => typeof v === 'number');
-    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-}
-
-function formatDate(dateStr) {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function selectReport(report, listItem) {
-    // Update active state
-    document.querySelectorAll('.report-list-item').forEach(el => el.classList.remove('active'));
-    listItem.classList.add('active');
-
-    // Render detail pane
-    const detailPane = document.getElementById('reports-detail');
-    detailPane.innerHTML = renderReportDetail(report);
-    
-    // Attach event listeners for export buttons
-    document.getElementById('export-json-btn')?.addEventListener('click', () => exportReport(report, 'json'));
-    document.getElementById('export-text-btn')?.addEventListener('click', () => exportReport(report, 'text'));
-}
-
-function exportReport(report, format) {
-    let content = '';
-    
-    if (format === 'json') {
-        content = JSON.stringify(report, null, 2);
-    } else if (format === 'text') {
-        content = `Markus Report — ${formatDate(report.date)}\n`;
-        content += `${report.timestamp || ''}\n`;
-        content += `\n--- North Star Metrics ---\n`;
-        
-        if (report.north_star) {
-            const metrics = [
-                { key: 'response_quality', label: 'Response Quality' },
-                { key: 'cost_efficiency', label: 'Cost Efficiency' },
-                { key: 'task_completion', label: 'Task Completion' },
-                { key: 'autonomy', label: 'Autonomy' },
-                { key: 'speed', label: 'Speed' },
-                { key: 'initiative', label: 'Initiative' }
-            ];
-            for (const m of metrics) {
-                const score = report.north_star[m.key] || 0;
-                content += `${m.label}: ${score}%\n`;
-            }
-        }
-        
-        if (report.top_findings && report.top_findings.length > 0) {
-            content += `\n--- Findings ---\n`;
-            for (const finding of report.top_findings) {
-                content += `[${finding.type.toUpperCase()}] ${finding.title}\n`;
-                content += `${finding.description}\n\n`;
-            }
-        }
-        
-        if (report.proposals && report.proposals.length > 0) {
-            content += `\n--- Proposals ---\n`;
-            for (const proposal of report.proposals) {
-                content += `${proposal.title} (${proposal.status})\n`;
-                content += `${proposal.description}\n\n`;
-            }
-        }
-    }
-    
-    // Copy to clipboard
-    navigator.clipboard.writeText(content).then(() => {
-        const btn = document.getElementById(`export-${format}-btn`);
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => {
-            btn.textContent = originalText;
-        }, 2000);
-    }).catch(err => {
-        alert('Failed to copy to clipboard');
+  function formatTimestamp(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
     });
-}
+  }
 
-function renderReportDetail(report) {
-    const avgScore = calculateAvgScore(report);
-    
-    let html = `
-        <div class="report-detail">
-            <div class="report-header">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div>
-                        <div class="report-title">${formatDate(report.date)}</div>
-                        <div class="report-meta">${report.timestamp || ''} | Average Score: ${avgScore}%</div>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <button id="export-json-btn" class="export-btn">Export JSON</button>
-                        <button id="export-text-btn" class="export-btn">Export Text</button>
-                    </div>
-                </div>
+  function metricLabel(key) {
+    const labels = {
+      response_quality: 'Response Quality',
+      cost_efficiency: 'Cost Efficiency',
+      task_completion: 'Task Completion',
+      autonomy: 'Autonomy',
+      speed: 'Speed',
+      initiative: 'Initiative'
+    };
+    return labels[key] || key;
+  }
+
+  function severityClass(sev) {
+    const map = { info: 'badge-info', warning: 'badge-warning', error: 'badge-error', success: 'badge-success' };
+    return map[sev] || 'badge-info';
+  }
+
+  function statusClass(status) {
+    const map = { pending: 'status-pending', approved: 'status-approved', rejected: 'status-rejected' };
+    return map[status] || 'status-pending';
+  }
+
+  // ── DOM refs ──────────────────────────────────────────────
+  const $pinScreen = document.getElementById('pin-screen');
+  const $pinInput = document.getElementById('pin-input');
+  const $pinSubmit = document.getElementById('pin-submit');
+  const $pinError = document.getElementById('pin-error');
+  const $app = document.getElementById('app');
+  const $hamburger = document.getElementById('hamburger');
+  const $sidebar = document.getElementById('sidebar');
+  const $sidebarOverlay = document.getElementById('sidebar-overlay');
+  const $sidebarClose = document.getElementById('sidebar-close');
+  const $reportList = document.getElementById('report-list');
+  const $reportContent = document.getElementById('report-content');
+  const $emptyState = document.getElementById('empty-state');
+  const $reportView = document.getElementById('report-view');
+  const $signOut = document.getElementById('sign-out');
+
+  let reports = [];
+  let manifest = [];
+
+  // ── PIN Auth ──────────────────────────────────────────────
+  async function checkPin(pin) {
+    const hash = await sha256(pin);
+    return hash === PIN_HASH;
+  }
+
+  async function handlePinSubmit() {
+    const pin = $pinInput.value;
+    if (await checkPin(pin)) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      $pinScreen.classList.add('hidden');
+      $app.classList.remove('hidden');
+      loadReports();
+    } else {
+      $pinError.textContent = 'Incorrect code';
+      $pinInput.classList.add('shake');
+      setTimeout(() => $pinInput.classList.remove('shake'), 400);
+      $pinInput.value = '';
+      $pinInput.focus();
+    }
+  }
+
+  $pinSubmit.addEventListener('click', handlePinSubmit);
+  $pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handlePinSubmit(); });
+
+  $signOut.addEventListener('click', () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    $app.classList.add('hidden');
+    $pinScreen.classList.remove('hidden');
+    $pinInput.value = '';
+    $pinError.textContent = '';
+    $pinInput.focus();
+  });
+
+  // Check session
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    $pinScreen.classList.add('hidden');
+    $app.classList.remove('hidden');
+    loadReports();
+  } else {
+    $pinInput.focus();
+  }
+
+  // ── Sidebar Toggle ────────────────────────────────────────
+  function openSidebar() {
+    $sidebar.classList.add('open');
+    $sidebarOverlay.classList.remove('hidden');
+  }
+  function closeSidebar() {
+    $sidebar.classList.remove('open');
+    $sidebarOverlay.classList.add('hidden');
+  }
+
+  $hamburger.addEventListener('click', openSidebar);
+  $sidebarClose.addEventListener('click', closeSidebar);
+  $sidebarOverlay.addEventListener('click', closeSidebar);
+
+  // ── Load Reports ──────────────────────────────────────────
+  async function loadReports() {
+    try {
+      const res = await fetch('data/manifest.json?t=' + Date.now());
+      manifest = await res.json();
+    } catch {
+      manifest = [];
+    }
+
+    if (!manifest.length) {
+      $emptyState.classList.remove('hidden');
+      $reportView.classList.add('hidden');
+      return;
+    }
+
+    // Fetch all reports
+    reports = [];
+    for (const file of manifest) {
+      try {
+        const r = await fetch('data/' + file + '?t=' + Date.now());
+        const data = await r.json();
+        reports.push(data);
+      } catch { /* skip broken files */ }
+    }
+
+    // Sort newest first
+    reports.sort((a, b) => b.date.localeCompare(a.date));
+
+    // Build sidebar
+    renderSidebar();
+
+    // Show first report
+    if (reports.length) {
+      $emptyState.classList.add('hidden');
+      showReport(0);
+    }
+  }
+
+  // ── Render Sidebar ────────────────────────────────────────
+  function renderSidebar() {
+    $reportList.innerHTML = '';
+    reports.forEach((r, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="date">${formatDate(r.date)}</div>
+        <div class="score">${pct(r.composite)}% composite</div>
+      `;
+      li.addEventListener('click', () => {
+        showReport(i);
+        closeSidebar();
+      });
+      $reportList.appendChild(li);
+    });
+  }
+
+  // ── Render Report ─────────────────────────────────────────
+  function showReport(index) {
+    const r = reports[index];
+
+    // Update sidebar active
+    const items = $reportList.querySelectorAll('li');
+    items.forEach((li, i) => li.classList.toggle('active', i === index));
+
+    const compositeColor = scoreColor(r.composite);
+
+    // Build metrics rows
+    const metricsHTML = Object.entries(r.scores).map(([key, data]) => {
+      const sc = scoreColor(data.score);
+      return `
+        <div class="metric-row">
+          <span class="metric-name">${metricLabel(key)}</span>
+          <div class="metric-bar-track">
+            <div class="metric-bar-fill" style="width:${pct(data.score)}%;background:${sc.color}"></div>
+          </div>
+          <span class="metric-value" style="color:${sc.color}">${data.score}</span>
+        </div>
+      `;
+    }).join('');
+
+    // Build findings
+    const findingsHTML = (r.findings && r.findings.length)
+      ? r.findings.map(f => `
+          <li class="finding-item">
+            <span class="finding-badge ${severityClass(f.severity)}">${f.severity}</span>
+            <span class="finding-text">${f.message}</span>
+          </li>
+        `).join('')
+      : '<li class="finding-item"><span class="finding-text muted">No findings this run.</span></li>';
+
+    // Build proposals
+    const proposalsHTML = (r.proposals && r.proposals.length)
+      ? r.proposals.map(p => `
+          <li class="proposal-item">
+            <div class="proposal-header">
+              <span class="proposal-type">${p.type}</span>
+              <span class="proposal-title">${p.title}</span>
+              <span class="status-badge ${statusClass(p.status)}">${p.status}</span>
             </div>
+            ${p.summary ? `<div class="proposal-summary">${p.summary}</div>` : ''}
+          </li>
+        `).join('')
+      : '<li class="proposal-item"><span class="proposal-summary">No proposals this run.</span></li>';
+
+    // Build modules
+    const modulesHTML = (r.modules_run && r.modules_run.length)
+      ? r.modules_run.map(m => `<span class="module-tag">${m}</span>`).join('')
+      : '<span class="module-tag">—</span>';
+
+    $reportView.innerHTML = `
+      <div class="report-header">
+        <div class="report-date">${formatTimestamp(r.timestamp)}</div>
+        <div class="report-composite">
+          <span class="composite-score" style="color:${compositeColor.color}">${pct(r.composite)}%</span>
+          <span class="composite-label">composite score</span>
+        </div>
+      </div>
+
+      <div class="section-head">North Star Metrics</div>
+      <div class="metrics-table">${metricsHTML}</div>
+
+      <div class="section-head">Findings</div>
+      <ul class="findings-list">${findingsHTML}</ul>
+
+      <div class="section-head">Proposals</div>
+      <ul class="proposals-list">${proposalsHTML}</ul>
+
+      <div class="section-head">Modules Executed</div>
+      <div class="modules-tags">${modulesHTML}</div>
     `;
 
-    // North Star Scores
-    if (report.north_star) {
-        html += `
-            <div class="section">
-                <div class="section-title">North Star Metrics</div>
-                <div class="scores-grid">
-        `;
-        
-        const metrics = [
-            { key: 'response_quality', label: 'Response Quality' },
-            { key: 'cost_efficiency', label: 'Cost Efficiency' },
-            { key: 'task_completion', label: 'Task Completion' },
-            { key: 'autonomy', label: 'Autonomy' },
-            { key: 'speed', label: 'Speed' },
-            { key: 'initiative', label: 'Initiative' }
-        ];
-
-        for (const m of metrics) {
-            const score = report.north_star[m.key] || 0;
-            html += `
-                <div class="score-item">
-                    <div class="score-name">${m.label}</div>
-                    <div class="score-value">${score}%</div>
-                </div>
-            `;
-        }
-        
-        html += `</div></div>`;
-    }
-
-    // Top Findings
-    if (report.top_findings && report.top_findings.length > 0) {
-        html += `<div class="section"><div class="section-title">Findings</div>`;
-        for (const finding of report.top_findings) {
-            const type = finding.type || 'info';
-            html += `
-                <div class="finding-item ${type}">
-                    <div class="finding-title">${finding.title}</div>
-                    <div class="finding-description">${finding.description}</div>
-                </div>
-            `;
-        }
-        html += `</div>`;
-    }
-
-    // Proposals
-    if (report.proposals && report.proposals.length > 0) {
-        html += `<div class="section"><div class="section-title">Proposals</div>`;
-        for (const proposal of report.proposals) {
-            const status = proposal.status || 'pending';
-            html += `
-                <div class="proposal-item">
-                    <div class="proposal-header">
-                        <div class="proposal-title">${proposal.title}</div>
-                        <span class="proposal-status ${status}">${status}</span>
-                    </div>
-                    <div class="proposal-description">${proposal.description}</div>
-                </div>
-            `;
-        }
-        html += `</div>`;
-    }
-
-    // Metadata
-    if (report.metadata) {
-        html += `
-            <div class="section">
-                <div class="section-title">Metadata</div>
-                <table class="metadata-table">
-                    <tr><td>Duration</td><td>${report.metadata.run_duration_seconds}s</td></tr>
-                    <tr><td>Modules Executed</td><td>${report.metadata.modules_executed}</td></tr>
-                    <tr><td>Files Processed</td><td>${report.metadata.files_processed}</td></tr>
-                    <tr><td>Git Commits</td><td>${report.metadata.git_commits}</td></tr>
-                    <tr><td>Errors</td><td>${report.metadata.errors}</td></tr>
-                    <tr><td>Warnings</td><td>${report.metadata.warnings}</td></tr>
-                </table>
-            </div>
-        `;
-    }
-
-    html += `</div>`;
-    return html;
-}
-
-// Init
-window.addEventListener('load', () => {
-    checkAuthentication();
-});
+    $reportView.classList.remove('hidden');
+  }
+})();

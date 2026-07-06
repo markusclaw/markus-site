@@ -1,60 +1,27 @@
 {
   "date": "2026-07-06",
-  "timestamp": "03:00 AM PDT",
-  "north_star": {
-    "response_quality": 88,
-    "cost_efficiency": 92,
-    "task_completion": 85,
-    "autonomy": 87,
-    "speed": 90,
-    "initiative": 83
+  "timestamp": "2026-07-06T03:00:12-06:00",
+  "scores": {
+    "response_quality": { "score": 7.2, "weight": 0.16, "details": "Handled 14 conversations; 2 had incomplete follow-ups. Tone consistency at 91%." },
+    "cost_efficiency": { "score": 8.5, "weight": 0.16, "details": "Haiku handled 82% of conversations. Sonnet fallback triggered 3 times (complex reasoning). Total spend: $4.12." },
+    "task_completion": { "score": 6.8, "weight": 0.16, "details": "11 of 14 tasks fully completed. 3 partial: quiniela deploy, Discord bot, post-reorg cleanup." },
+    "autonomy": { "score": 5.4, "weight": 0.16, "details": "Required 6 clarification prompts across 14 tasks. Self-resolved 2 issues without prompting." },
+    "speed": { "score": 7.0, "weight": 0.16, "details": "Median response time 3.2s. Two outliers >12s due to Sonnet cold-start fallback." },
+    "initiative": { "score": 4.2, "weight": 0.20, "details": "Proactive daemon just installed. No autonomous messages sent yet. Morning briefing queued for tomorrow 7 AM." }
   },
-  "top_findings": [
-    {
-      "type": "success",
-      "title": "Memory Cleanup Complete",
-      "description": "Fixed 3 duplicate entries in MEMORY.md, consolidated 2 stale project notes, archived 4 obsolete daily files."
-    },
-    {
-      "type": "success",
-      "title": "Cost Efficiency Improved",
-      "description": "Reduced API calls by 12% through optimized caching. Saved ~$2.40 on OpenAI inference."
-    },
-    {
-      "type": "info",
-      "title": "New Pattern Detected",
-      "description": "Noticed tendency to over-scaffold on first blueprint draft. Recommend: reduce initial section count to 20, expand only after Greg feedback."
-    },
-    {
-      "type": "warning",
-      "title": "Response Latency Spike",
-      "description": "2 sessions with >8s response times (both on web_search + memory_get combo). Consider batching searches."
-    }
+  "composite": 6.4,
+  "findings": [
+    { "type": "memory", "severity": "info", "message": "Deduplicated 3 redundant memory entries in workspace/memory/." },
+    { "type": "pattern", "severity": "warning", "message": "Recurring: user asks for file edits but gets code blocks instead. Consider defaulting to direct file writes." },
+    { "type": "system", "severity": "warning", "message": "Mac mini disk at 4.3 GB free — approaching critical threshold. Consider offloading to gaming PC." },
+    { "type": "script", "severity": "info", "message": "push-report.sh created but not yet tested in production cron context." },
+    { "type": "config", "severity": "info", "message": "Ollama endpoint (10.0.0.2:11434) unreachable during test — gaming PC may be powered off." },
+    { "type": "pattern", "severity": "info", "message": "WhatsApp message delivery latency averages 1.8s. Within acceptable range." }
   ],
   "proposals": [
-    {
-      "title": "Update SOUL.md — Design Philosophy",
-      "description": "Add emphasis on iterative refinement over perfection on first pass. Clarifies when to ship MVP vs when to polish.",
-      "status": "pending"
-    },
-    {
-      "title": "New Memory Module: decision_log.md",
-      "description": "Track major decisions, reasoning, and outcomes. Helps catch patterns in planning vs execution.",
-      "status": "pending"
-    },
-    {
-      "title": "Optimize web_search — Batch Queries",
-      "description": "When multiple searches needed in same task, queue them together. Reduces latency and improves context coherence.",
-      "status": "pending"
-    }
+    { "id": "prop-001", "type": "prompt", "title": "Add file-write preference to system prompt", "status": "pending", "summary": "Pattern analysis shows user prefers direct file edits over code-block responses. Propose adding instruction to default to Write tool." },
+    { "id": "prop-002", "type": "script", "title": "Add disk space monitor threshold alert", "status": "pending", "summary": "System health monitor should alert at 5 GB remaining instead of current 2 GB threshold." },
+    { "id": "prop-003", "type": "config", "title": "Increase Ollama connection timeout", "status": "pending", "summary": "Current 5s timeout too aggressive for cold-start scenarios. Propose 15s with exponential backoff." }
   ],
-  "metadata": {
-    "run_duration_seconds": 47,
-    "modules_executed": 5,
-    "memory_cleanup_confidence": 0.95,
-    "files_processed": 127,
-    "git_commits": 2,
-    "errors": 0,
-    "warnings": 1
-  }
+  "modules_run": ["memory_cleanup", "prompt_review", "script_audit", "pattern_analysis", "activity_reviewer", "metrics_tracker", "competitive_benchmark", "improvement_engine"]
 }

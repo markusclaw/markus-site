@@ -1,55 +1,22 @@
 {
   "date": "2026-07-05",
-  "timestamp": "03:00 AM PDT",
-  "north_star": {
-    "response_quality": 85,
-    "cost_efficiency": 88,
-    "task_completion": 82,
-    "autonomy": 84,
-    "speed": 86,
-    "initiative": 80
+  "timestamp": "2026-07-05T03:00:08-06:00",
+  "scores": {
+    "response_quality": { "score": 8.4, "weight": 0.16, "details": "Handled 9 conversations with 95% completion. Good tone calibration." },
+    "cost_efficiency": { "score": 7.8, "weight": 0.16, "details": "Haiku usage at 71%. 5 Sonnet fallbacks — higher than target. Spend: $6.40." },
+    "task_completion": { "score": 8.1, "weight": 0.16, "details": "8 of 9 tasks completed. 1 partial: quiniela audit awaiting data reconciliation." },
+    "autonomy": { "score": 4.8, "weight": 0.16, "details": "Required 8 clarifications across 9 tasks. High dependency on user input." },
+    "speed": { "score": 7.5, "weight": 0.16, "details": "Median response 2.8s. Consistent performance, no major outliers." },
+    "initiative": { "score": 3.0, "weight": 0.20, "details": "No proactive systems installed. Zero autonomous actions taken." }
   },
-  "top_findings": [
-    {
-      "type": "success",
-      "title": "Blueprint Standard Applied",
-      "description": "Successfully used BLUEPRINT_STANDARD.md for 2 new project proposals. Both passed trilateral review on round 1."
-    },
-    {
-      "type": "success",
-      "title": "Autonomy Increase",
-      "description": "Resolved 4 issues without asking Greg for clarification. Better pattern recognition on intent."
-    },
-    {
-      "type": "info",
-      "title": "Session Context Drift",
-      "description": "On 3 occasions, had to re-read MEMORY.md because context was unclear. Consider fetching memory more aggressively at session start."
-    },
-    {
-      "type": "warning",
-      "title": "Proposal Backlog Growing",
-      "description": "5 pending proposals now (was 2 yesterday). Recommend batch approval review tomorrow."
-    }
+  "composite": 6.5,
+  "findings": [
+    { "type": "memory", "severity": "info", "message": "5 stale memory entries archived from workspace/memory/." },
+    { "type": "pattern", "severity": "warning", "message": "User frequently re-explains context from prior sessions. Memory recall needs improvement." },
+    { "type": "system", "severity": "info", "message": "All system health checks nominal. CPU avg 12%, memory 68%." }
   ],
   "proposals": [
-    {
-      "title": "Skill Workshop: Blueprint Validator",
-      "description": "Auto-checks blueprints against BLUEPRINT_STANDARD.md. Flags missing sections, incomplete cards, weak team pipeline descriptions.",
-      "status": "pending"
-    },
-    {
-      "title": "Memory Warmup at Session Start",
-      "description": "Pre-load top 5 most recent memory files + current project context before first response. Reduces latency on follow-up questions.",
-      "status": "pending"
-    }
+    { "id": "prop-004", "type": "prompt", "title": "Improve cross-session memory retrieval", "status": "pending", "summary": "Add explicit instruction to check memory files at conversation start to reduce user re-explaining context." }
   ],
-  "metadata": {
-    "run_duration_seconds": 52,
-    "modules_executed": 5,
-    "memory_cleanup_confidence": 0.92,
-    "files_processed": 143,
-    "git_commits": 1,
-    "errors": 0,
-    "warnings": 1
-  }
+  "modules_run": ["memory_cleanup", "prompt_review", "script_audit", "pattern_analysis", "activity_reviewer", "metrics_tracker"]
 }
