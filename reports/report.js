@@ -138,6 +138,13 @@ function deltaText(delta) {
     return '0';
 }
 
+// ASCII bar out of 10 cells for a 0–10 score
+function asciiBar(score) {
+    const cells = 10;
+    const filled = Math.max(0, Math.min(cells, Math.round(score)));
+    return `<span class="score-bar">[${'█'.repeat(filled)}<span class="empty">${'░'.repeat(cells - filled)}</span>]</span>`;
+}
+
 // info | warning | error → css class; anything else → info
 function severityClass(sev) {
     const s = String(sev || 'info').toLowerCase();
@@ -176,7 +183,7 @@ async function loadReports() {
             const prior = reports[idx + 1];
             const delta = prior ? (comp - compositeScore(prior)) : null;
             item.innerHTML = `
-                <span class="report-date-label">${escapeHtml(formatDateShort(report.date))}</span>
+                <span class="report-date-label">${escapeHtml(report.date || formatDateShort(report.date))}</span>
                 <span class="report-score"><span class="pct">${fmt1(comp)}</span>/10 ${deltaMarkup(delta)}</span>
             `;
             item.addEventListener('click', () => selectReport(idx, item));
@@ -205,12 +212,6 @@ function selectReport(idx, listItem) {
     const detailPane = document.getElementById('reports-detail');
     detailPane.innerHTML = renderReportDetail(report, prior);
 
-    requestAnimationFrame(() => {
-        detailPane.querySelectorAll('.score-fill').forEach(el => {
-            el.style.width = el.dataset.width + '%';
-        });
-    });
-
     document.getElementById('copy-md-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, buildMarkdown(report, prior)));
     document.getElementById('copy-json-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, JSON.stringify(report, null, 2)));
 }
@@ -223,24 +224,20 @@ function renderReportDetail(report, prior) {
     let html = `
         <div class="report-detail">
             <div class="report-header">
-                <div>
-                    <div class="report-title">${escapeHtml(formatDate(report.date))}</div>
-                    <div class="report-meta">${escapeHtml(formatTimestamp(report.timestamp))}${prior ? ' · vs ' + escapeHtml(formatDateShort(prior.date)) : ''}</div>
-                </div>
-                <div class="report-avg">
-                    <span class="big">${fmt1(comp)}<span class="denom">/10</span></span>
-                    <span class="lab">composite<br>${deltaMarkup(compDelta)}</span>
-                </div>
+                <div class="report-cmd">markus audit --report ${escapeHtml(report.date || '')}</div>
+                <div class="report-title">${escapeHtml(formatDate(report.date))}</div>
+                <div class="report-meta">${escapeHtml(formatTimestamp(report.timestamp))}${prior ? ' · prior: ' + escapeHtml(prior.date || formatDateShort(prior.date)) : ''}</div>
+                <div class="report-avg"><span class="key">composite: </span><span class="big">${fmt1(comp)}</span><span class="denom">/10</span> ${deltaMarkup(compDelta)}</div>
                 <div class="header-actions">
-                    <button id="copy-md-btn" class="export-btn primary">Copy report (Markdown)</button>
-                    <button id="copy-json-btn" class="export-btn">Copy JSON</button>
+                    <button id="copy-md-btn" class="export-btn primary">copy .md</button>
+                    <button id="copy-json-btn" class="export-btn">copy .json</button>
                 </div>
             </div>
     `;
 
-    // Scores: bars + trend + detail
+    // Scores: ASCII bars + trend + detail
     if (report.scores) {
-        html += `<div class="section"><div class="section-title">North Star Metrics</div><div class="scores-list">`;
+        html += `<div class="section"><div class="section-title">north_star</div><div class="scores-list">`;
         for (const m of METRICS) {
             const score = metricScore(report.scores, m.key);
             if (score === null) continue;
@@ -249,11 +246,9 @@ function renderReportDetail(report, prior) {
             const details = metricDetails(report.scores, m.key);
             html += `
                 <div class="score-item">
-                    <div class="score-top">
-                        <span class="score-name">${escapeHtml(m.label)}</span>
-                        <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span>${deltaMarkup(delta)}</span>
-                    </div>
-                    <div class="score-track"><div class="score-fill" data-width="${Math.max(0, Math.min(100, score * 10))}"></div></div>
+                    <span class="score-name">${escapeHtml(m.key)}</span>
+                    ${asciiBar(score)}
+                    <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span> ${deltaMarkup(delta)}</span>
                     ${details ? `<div class="score-detail">${escapeHtml(details)}</div>` : ''}
                 </div>
             `;
@@ -261,48 +256,46 @@ function renderReportDetail(report, prior) {
         html += `</div></div>`;
     }
 
-    // Findings
+    // Findings — log lines
     if (report.findings && report.findings.length) {
-        html += `<div class="section"><div class="section-title">Findings</div>`;
+        html += `<div class="section"><div class="section-title">findings</div><div class="findings-log">`;
         for (const f of report.findings) {
             const sev = severityClass(f.severity);
-            const type = f.type || 'note';
             html += `
-                <div class="finding-item ${sev}">
-                    <div class="finding-title"><span class="finding-badge">${escapeHtml(type)}</span><span class="finding-sev ${sev}">${escapeHtml(f.severity || 'info')}</span></div>
-                    <div class="finding-description">${escapeHtml(f.message || f.description || '')}</div>
+                <div class="finding-line">
+                    <span class="finding-sev ${sev}">${escapeHtml(f.severity || 'info')}</span>
+                    <span class="finding-type">${escapeHtml(f.type || 'note')}</span>
+                    <span class="finding-message">${escapeHtml(f.message || f.description || '')}</span>
                 </div>
             `;
         }
-        html += `</div>`;
+        html += `</div></div>`;
     }
 
     // Proposals
     if (report.proposals && report.proposals.length) {
-        html += `<div class="section"><div class="section-title">Proposals</div>`;
+        html += `<div class="section"><div class="section-title">proposals</div><div class="proposals-log">`;
         for (const p of report.proposals) {
             const status = (p.status || 'pending').toLowerCase();
-            const meta = [p.type, p.id].filter(Boolean).map(escapeHtml).join(' · ');
             html += `
                 <div class="proposal-item">
-                    <div class="proposal-header">
-                        <div class="proposal-title">${escapeHtml(p.title || '')}</div>
+                    <div class="proposal-line">
+                        ${p.id ? `<span class="proposal-id">${escapeHtml(p.id)}</span>` : ''}
                         <span class="proposal-status ${escapeHtml(status)}">${escapeHtml(status)}</span>
+                        <span class="proposal-title">${escapeHtml(p.title || '')}</span>
+                        ${p.type ? `<span class="proposal-type">(${escapeHtml(p.type)})</span>` : ''}
                     </div>
-                    <div class="proposal-description">${escapeHtml(p.summary || p.description || '')}</div>
-                    ${meta ? `<div class="proposal-meta">${meta}</div>` : ''}
+                    <div class="proposal-summary">${escapeHtml(p.summary || p.description || '')}</div>
                 </div>
             `;
         }
-        html += `</div>`;
+        html += `</div></div>`;
     }
 
     // Modules run
     if (report.modules_run && report.modules_run.length) {
-        html += `<div class="section"><div class="section-title">Modules Run</div><div class="module-chips">`;
-        for (const mod of report.modules_run) {
-            html += `<span class="chip">${escapeHtml(mod)}</span>`;
-        }
+        html += `<div class="section"><div class="section-title">modules_run</div><div class="modules-line">`;
+        html += report.modules_run.map(mod => `<span class="mod">${escapeHtml(mod)}</span>`).join('<span class="sep"> · </span>');
         html += `</div></div>`;
     }
 
