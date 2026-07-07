@@ -141,6 +141,44 @@ function deltaText(delta) {
     return '0';
 }
 
+// Chronological (oldest→newest) list of a metric's scores across all reports
+function metricSeries(key) {
+    const chrono = [...allReports].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const out = [];
+    for (const r of chrono) {
+        const s = metricScore(r.scores, key);
+        if (s !== null) out.push(s);
+    }
+    return out;
+}
+
+// Inline-SVG sparkline for a series of 0–10 scores (auto-scaled)
+function buildSparkline(values) {
+    const W = 300, H = 44, m = 6;
+    if (!values.length) return '';
+    let lo = Math.min(...values), hi = Math.max(...values);
+    if (hi - lo < 1) { const mid = (hi + lo) / 2; lo = mid - 0.75; hi = mid + 0.75; }
+    else { const pad = (hi - lo) * 0.22; lo -= pad; hi += pad; }
+    const rng = (hi - lo) || 1;
+    const n = values.length;
+    const xAt = (i) => n === 1 ? W : (i / (n - 1)) * W;
+    const yAt = (v) => m + (1 - (v - lo) / rng) * (H - 2 * m);
+
+    const arr = n === 1
+        ? [[0, yAt(values[0])], [W, yAt(values[0])]]
+        : values.map((v, i) => [xAt(i), yAt(v)]);
+    const fmt = (p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+    const poly = arr.map(fmt).join(' ');
+    const areaD = `M0,${H} L${arr.map(fmt).join(' L')} L${W},${H} Z`;
+    const last = arr[arr.length - 1];
+
+    return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-hidden="true">
+        <path class="spark-area" d="${areaD}"/>
+        <polyline class="spark-line" points="${poly}" vector-effect="non-scaling-stroke"/>
+        <circle class="spark-dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.6" vector-effect="non-scaling-stroke"/>
+    </svg>`;
+}
+
 // info | warning | error → css class; anything else → info
 function severityClass(sev) {
     const s = String(sev || 'info').toLowerCase();
@@ -246,14 +284,13 @@ function renderReportDetail(report, prior) {
             const priorScore = prior ? metricScore(prior.scores, m.key) : null;
             const delta = priorScore === null ? null : score - priorScore;
             const details = metricDetails(report.scores, m.key);
-            const pct = Math.max(0, Math.min(100, score * 10));
             html += `
                 <div class="score-item">
                     <div class="score-top">
                         <span class="score-name">${escapeHtml(m.label)}</span>
                         <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span> ${deltaMarkup(delta)}</span>
                     </div>
-                    <div class="mdc-bar"><div class="mdc-bar-fill" style="width:${pct}%"></div></div>
+                    ${buildSparkline(metricSeries(m.key))}
                     ${details ? `<div class="score-detail">${escapeHtml(details)}</div>` : ''}
                 </div>
             `;
