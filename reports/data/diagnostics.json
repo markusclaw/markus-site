@@ -1,0 +1,61 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "events": [
+    {
+      "id": "D-1042",
+      "ts": "2026-07-07T14:40:11-06:00",
+      "severity": "critical",
+      "subsystem": "runtime",
+      "message": "Disk at 98% (4.3 GB free) on Mac mini — write failures imminent.",
+      "recommendation": "Offload archives to Gaming PC or prune logs; raise alert threshold to 5 GB."
+    },
+    {
+      "id": "D-1041",
+      "ts": "2026-07-07T14:31:02-06:00",
+      "severity": "error",
+      "subsystem": "agents",
+      "message": "ollama-bridge unreachable at 10.0.0.2:11434 — Gaming PC offline.",
+      "recommendation": "Power on Gaming PC or disable local-LLM routing until available."
+    },
+    {
+      "id": "D-1039",
+      "ts": "2026-07-07T13:58:44-06:00",
+      "severity": "warning",
+      "subsystem": "cognition",
+      "message": "Autonomy low: 6 clarification prompts across 14 tasks.",
+      "recommendation": "Pre-load memory context at session start."
+    },
+    {
+      "id": "D-1037",
+      "ts": "2026-07-07T12:22:10-06:00",
+      "severity": "warning",
+      "subsystem": "runtime",
+      "message": "2 sessions exceeded 8s latency (Sonnet cold-start fallback).",
+      "recommendation": "Warm Sonnet pool or batch web_search calls."
+    },
+    {
+      "id": "D-1034",
+      "ts": "2026-07-07T11:05:33-06:00",
+      "severity": "info",
+      "subsystem": "memory",
+      "message": "Deduplicated 3 redundant memory entries.",
+      "recommendation": null
+    },
+    {
+      "id": "D-1031",
+      "ts": "2026-07-07T09:12:00-06:00",
+      "severity": "info",
+      "subsystem": "execution",
+      "message": "push-report.sh registered in cron (03:00 daily).",
+      "recommendation": null
+    },
+    {
+      "id": "D-1029",
+      "ts": "2026-07-07T03:00:12-06:00",
+      "severity": "info",
+      "subsystem": "evolution",
+      "message": "Nightly self-audit complete. Composite 6.4 (-0.1).",
+      "recommendation": null
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "agents": [
+    {
+      "name": "memory-curator",
+      "role": "Memory hygiene & dedup",
+      "model": "haiku-4.5",
+      "status": "active",
+      "current_task": "Deduplicating workspace/memory/",
+      "latency_ms": 820,
+      "mem_mb": 142,
+      "queue": 1,
+      "heartbeat_s": 12,
+      "last_active": "2026-07-07T14:43:40-06:00",
+      "deps": [
+        "memory-store"
+      ]
+    },
+    {
+      "name": "activity-reviewer",
+      "role": "Session log analysis",
+      "model": "haiku-4.5",
+      "status": "active",
+      "current_task": "Scanning 6 sessions",
+      "latency_ms": 640,
+      "mem_mb": 98,
+      "queue": 0,
+      "heartbeat_s": 8,
+      "last_active": "2026-07-07T14:43:55-06:00",
+      "deps": [
+        "event-bus"
+      ]
+    },
+    {
+      "name": "improvement-engine",
+      "role": "Self-enhancement proposals",
+      "model": "sonnet-5",
+      "status": "active",
+      "current_task": "Ranking 3 proposals",
+      "latency_ms": 4100,
+      "mem_mb": 214,
+      "queue": 2,
+      "heartbeat_s": 20,
+      "last_active": "2026-07-07T14:43:20-06:00",
+      "deps": [
+        "memory-curator",
+        "activity-reviewer"
+      ]
+    },
+    {
+      "name": "code-reviewer",
+      "role": "Diff review & security",
+      "model": "sonnet-5",
+      "status": "idle",
+      "current_task": null,
+      "latency_ms": 0,
+      "mem_mb": 60,
+      "queue": 0,
+      "heartbeat_s": 410,
+      "last_active": "2026-07-07T13:56:00-06:00",
+      "deps": [
+        "git-watcher"
+      ]
+    },
+    {
+      "name": "research-agent",
+      "role": "Web research & synthesis",
+      "model": "haiku-4.5",
+      "status": "standby",
+      "current_task": null,
+      "latency_ms": 0,
+      "mem_mb": 44,
+      "queue": 0,
+      "heartbeat_s": 2400,
+      "last_active": "2026-07-07T14:04:00-06:00",
+      "deps": []
+    },
+    {
+      "name": "scheduler",
+      "role": "Task scheduling & cron",
+      "model": "local",
+      "status": "active",
+      "current_task": "Next run 03:00",
+      "latency_ms": 15,
+      "mem_mb": 22,
+      "queue": 4,
+      "heartbeat_s": 3,
+      "last_active": "2026-07-07T14:43:57-06:00",
+      "deps": []
+    },
+    {
+      "name": "ollama-bridge",
+      "role": "Local LLM gateway",
+      "model": "local",
+      "status": "error",
+      "current_task": "Reconnect 10.0.0.2:11434",
+      "latency_ms": 0,
+      "mem_mb": 0,
+      "queue": 0,
+      "heartbeat_s": 5200,
+      "last_active": "2026-07-07T13:18:00-06:00",
+      "deps": [
+        "gaming-pc"
+      ]
+    }
+  ]
+}

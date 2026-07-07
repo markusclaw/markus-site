@@ -1,0 +1,59 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "events": [
+    {
+      "ts": "2026-07-07T14:43:57-06:00",
+      "type": "heartbeat",
+      "subsystem": "kernel",
+      "message": "Pulse OK · state active"
+    },
+    {
+      "ts": "2026-07-07T14:40:11-06:00",
+      "type": "alert",
+      "subsystem": "runtime",
+      "message": "CRITICAL: disk 98%"
+    },
+    {
+      "ts": "2026-07-07T14:31:02-06:00",
+      "type": "agent",
+      "subsystem": "agents",
+      "message": "ollama-bridge entered ERROR"
+    },
+    {
+      "ts": "2026-07-07T14:12:41-06:00",
+      "type": "task_completed",
+      "subsystem": "execution",
+      "message": "Task: refactor report renderer"
+    },
+    {
+      "ts": "2026-07-07T13:58:44-06:00",
+      "type": "agent_spawned",
+      "subsystem": "agents",
+      "message": "research-agent → standby"
+    },
+    {
+      "ts": "2026-07-07T11:05:33-06:00",
+      "type": "memory_cleanup",
+      "subsystem": "memory",
+      "message": "3 entries deduplicated"
+    },
+    {
+      "ts": "2026-07-07T09:12:00-06:00",
+      "type": "prompt_update",
+      "subsystem": "cognition",
+      "message": "SOUL.md design philosophy updated"
+    },
+    {
+      "ts": "2026-07-07T03:00:12-06:00",
+      "type": "report",
+      "subsystem": "evolution",
+      "message": "Nightly audit generated"
+    },
+    {
+      "ts": "2026-07-07T03:00:00-06:00",
+      "type": "proposal",
+      "subsystem": "evolution",
+      "message": "3 proposals generated"
+    }
+  ]
+}

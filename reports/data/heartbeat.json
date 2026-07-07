@@ -1,0 +1,7 @@
+{
+  "last_pulse": "2026-07-07T20:44:00.000Z",
+  "state": "active",
+  "next_run": "2026-07-08T03:00:00-06:00",
+  "alive_window_min": 90,
+  "note": "Updated by Markus on each heartbeat checkpoint."
+}

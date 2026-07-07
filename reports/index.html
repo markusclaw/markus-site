@@ -3,57 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markus Reports Log</title>
+    <title>MARKUS OS — System Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- PIN gate -->
     <div id="pin-gate" class="pin-gate">
         <div class="pin-container">
             <div class="pin-header">
-                <h1>Markus Reports</h1>
-                <p>Self-Enhancement Log</p>
+                <div class="pin-logo">◆ MARKUS <b>OS</b></div>
+                <p>System Console · authenticate</p>
             </div>
             <div class="pin-input-group">
-                <input 
-                    type="password" 
-                    id="pin-input" 
-                    class="pin-input" 
-                    placeholder="PIN" 
-                    maxlength="6"
-                    autocomplete="off"
-                >
+                <input type="password" id="pin-input" class="pin-input" placeholder="ACCESS KEY" maxlength="6" autocomplete="off">
                 <button id="pin-submit" class="pin-submit">→</button>
             </div>
             <div id="pin-error" class="pin-error"></div>
         </div>
     </div>
 
-    <div id="dashboard" class="dashboard hidden">
-        <header class="dashboard-header">
-            <h1>Markus Reports<span class="sub">Self-Enhancement Log</span></h1>
-            <button id="logout-btn" class="logout-btn">Sign Out</button>
-        </header>
-
-        <div class="dashboard-main">
-            <aside class="reports-sidebar">
-                <div class="sidebar-label">Timeline</div>
-                <ul class="reports-list" id="reports-list">
-                    <li class="loading">Loading...</li>
-                </ul>
-            </aside>
-
-            <main class="reports-detail">
-                <div id="global-systems"></div>
-                <div id="reports-detail">
-                    <div class="no-report-selected">Select a report to view details</div>
-                </div>
-            </main>
+    <!-- Console -->
+    <div id="console" class="os hidden">
+        <aside id="nav" class="os-nav"></aside>
+        <div class="os-main">
+            <header id="topstrip" class="os-topstrip"></header>
+            <main id="view" class="os-view"></main>
         </div>
+        <button id="logout-btn" class="os-logout" title="Sign out">⏻</button>
     </div>
 
-    <script src="report.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

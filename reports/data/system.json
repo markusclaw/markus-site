@@ -1,0 +1,43 @@
+{
+  "identity": "Markus Orus",
+  "designation": "Autonomous Systems Intelligence",
+  "model_primary": "claude-haiku-4.5",
+  "model_fallback": "claude-sonnet-5",
+  "framework": "Claude Agent SDK",
+  "version": "markus-2.4.1",
+  "kernel": "markus-kernel 0.1",
+  "host": "Mac mini (M2 · 16 GB)",
+  "os": "macOS 15.5",
+  "boot": "2026-07-04T23:44:00-06:00",
+  "uptime_hours": 63.7,
+  "machines": [
+    {
+      "name": "Mac mini (M2)",
+      "role": "primary runtime",
+      "status": "online"
+    },
+    {
+      "name": "Gaming PC",
+      "role": "local LLM (Ollama)",
+      "status": "offline"
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "WhatsApp",
+      "status": "online"
+    },
+    {
+      "name": "Discord",
+      "status": "planned"
+    },
+    {
+      "name": "Voice",
+      "status": "planned"
+    },
+    {
+      "name": "RAVN",
+      "status": "planned"
+    }
+  ]
+}
