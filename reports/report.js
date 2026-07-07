@@ -3,6 +3,9 @@
 // Simple PIN "curtain" (deterrent, not real security)
 const EXPECTED_PIN = '000000';
 
+// Material "content_copy" icon
+const COPY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+
 // Metric keys → display labels (0–10 scale)
 const METRICS = [
     { key: 'response_quality', label: 'Response Quality' },
@@ -138,13 +141,6 @@ function deltaText(delta) {
     return '0';
 }
 
-// ASCII bar out of 10 cells for a 0–10 score
-function asciiBar(score) {
-    const cells = 10;
-    const filled = Math.max(0, Math.min(cells, Math.round(score)));
-    return `<span class="score-bar">[${'█'.repeat(filled)}<span class="empty">${'░'.repeat(cells - filled)}</span>]</span>`;
-}
-
 // info | warning | error → css class; anything else → info
 function severityClass(sev) {
     const s = String(sev || 'info').toLowerCase();
@@ -183,7 +179,7 @@ async function loadReports() {
             const prior = reports[idx + 1];
             const delta = prior ? (comp - compositeScore(prior)) : null;
             item.innerHTML = `
-                <span class="report-date-label">${escapeHtml(report.date || formatDateShort(report.date))}</span>
+                <span class="report-date-label">${escapeHtml(formatDateShort(report.date))}</span>
                 <span class="report-score"><span class="pct">${fmt1(comp)}</span>/10 ${deltaMarkup(delta)}</span>
             `;
             item.addEventListener('click', () => selectReport(idx, item));
@@ -212,8 +208,8 @@ function selectReport(idx, listItem) {
     const detailPane = document.getElementById('reports-detail');
     detailPane.innerHTML = renderReportDetail(report, prior);
 
-    document.getElementById('copy-md-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, buildMarkdown(report, prior)));
-    document.getElementById('copy-json-btn')?.addEventListener('click', (e) => copyOut(e.currentTarget, JSON.stringify(report, null, 2)));
+    wireCopy('copy-md-btn', () => buildMarkdown(report, prior));
+    wireCopy('copy-json-btn', () => JSON.stringify(report, null, 2));
 }
 
 function renderReportDetail(report, prior) {
@@ -224,31 +220,40 @@ function renderReportDetail(report, prior) {
     let html = `
         <div class="report-detail">
             <div class="report-header">
-                <div class="report-cmd">markus audit --report ${escapeHtml(report.date || '')}</div>
-                <div class="report-title">${escapeHtml(formatDate(report.date))}</div>
-                <div class="report-meta">${escapeHtml(formatTimestamp(report.timestamp))}${prior ? ' · prior: ' + escapeHtml(prior.date || formatDateShort(prior.date)) : ''}</div>
-                <div class="report-avg"><span class="key">composite: </span><span class="big">${fmt1(comp)}</span><span class="denom">/10</span> ${deltaMarkup(compDelta)}</div>
-                <div class="header-actions">
-                    <button id="copy-md-btn" class="export-btn primary">copy .md</button>
-                    <button id="copy-json-btn" class="export-btn">copy .json</button>
+                <div>
+                    <div class="report-title">${escapeHtml(formatDate(report.date))}</div>
+                    <div class="report-meta">${escapeHtml(formatTimestamp(report.timestamp))}${prior ? ' · prior: ' + escapeHtml(prior.date || formatDateShort(prior.date)) : ''}</div>
+                </div>
+                <div class="rh-side">
+                    <div class="header-actions">
+                        <span id="copy-md-btn" class="copy-link" role="button" tabindex="0" title="Copy report as Markdown">${COPY_ICON}<span class="lbl">Markdown</span></span>
+                        <span id="copy-json-btn" class="copy-link" role="button" tabindex="0" title="Copy raw JSON">${COPY_ICON}<span class="lbl">JSON</span></span>
+                    </div>
+                    <div class="report-avg">
+                        <span class="big">${fmt1(comp)}<span class="denom">/10</span></span>
+                        <span class="key">Composite ${deltaMarkup(compDelta)}</span>
+                    </div>
                 </div>
             </div>
     `;
 
-    // Scores: ASCII bars + trend + detail
+    // Scores: linear progress bars + trend + detail
     if (report.scores) {
-        html += `<div class="section"><div class="section-title">north_star</div><div class="scores-list">`;
+        html += `<div class="section"><div class="section-title">North Star Metrics</div><div class="scores-list">`;
         for (const m of METRICS) {
             const score = metricScore(report.scores, m.key);
             if (score === null) continue;
             const priorScore = prior ? metricScore(prior.scores, m.key) : null;
             const delta = priorScore === null ? null : score - priorScore;
             const details = metricDetails(report.scores, m.key);
+            const pct = Math.max(0, Math.min(100, score * 10));
             html += `
                 <div class="score-item">
-                    <span class="score-name">${escapeHtml(m.key)}</span>
-                    ${asciiBar(score)}
-                    <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span> ${deltaMarkup(delta)}</span>
+                    <div class="score-top">
+                        <span class="score-name">${escapeHtml(m.label)}</span>
+                        <span class="score-figs"><span class="score-value">${fmt1(score)}</span><span class="score-max">/10</span> ${deltaMarkup(delta)}</span>
+                    </div>
+                    <div class="mdc-bar"><div class="mdc-bar-fill" style="width:${pct}%"></div></div>
                     ${details ? `<div class="score-detail">${escapeHtml(details)}</div>` : ''}
                 </div>
             `;
@@ -256,14 +261,15 @@ function renderReportDetail(report, prior) {
         html += `</div></div>`;
     }
 
-    // Findings — log lines
+    // Findings
     if (report.findings && report.findings.length) {
-        html += `<div class="section"><div class="section-title">findings</div><div class="findings-log">`;
+        html += `<div class="section"><div class="section-title">Findings</div><div class="findings-log">`;
         for (const f of report.findings) {
             const sev = severityClass(f.severity);
+            const chipClass = sev === 'warning' ? 'sev-warning' : sev === 'error' ? 'sev-error' : '';
             html += `
                 <div class="finding-line">
-                    <span class="finding-sev ${sev}">${escapeHtml(f.severity || 'info')}</span>
+                    <span class="chip ${chipClass}">${escapeHtml(f.severity || 'info')}</span>
                     <span class="finding-type">${escapeHtml(f.type || 'note')}</span>
                     <span class="finding-message">${escapeHtml(f.message || f.description || '')}</span>
                 </div>
@@ -274,16 +280,16 @@ function renderReportDetail(report, prior) {
 
     // Proposals
     if (report.proposals && report.proposals.length) {
-        html += `<div class="section"><div class="section-title">proposals</div><div class="proposals-log">`;
+        html += `<div class="section"><div class="section-title">Proposals</div><div class="proposals-log">`;
         for (const p of report.proposals) {
             const status = (p.status || 'pending').toLowerCase();
             html += `
                 <div class="proposal-item">
                     <div class="proposal-line">
-                        ${p.id ? `<span class="proposal-id">${escapeHtml(p.id)}</span>` : ''}
-                        <span class="proposal-status ${escapeHtml(status)}">${escapeHtml(status)}</span>
+                        <span class="chip">${escapeHtml(status)}</span>
                         <span class="proposal-title">${escapeHtml(p.title || '')}</span>
-                        ${p.type ? `<span class="proposal-type">(${escapeHtml(p.type)})</span>` : ''}
+                        ${p.type ? `<span class="proposal-type">${escapeHtml(p.type)}</span>` : ''}
+                        ${p.id ? `<span class="proposal-id">${escapeHtml(p.id)}</span>` : ''}
                     </div>
                     <div class="proposal-summary">${escapeHtml(p.summary || p.description || '')}</div>
                 </div>
@@ -294,8 +300,8 @@ function renderReportDetail(report, prior) {
 
     // Modules run
     if (report.modules_run && report.modules_run.length) {
-        html += `<div class="section"><div class="section-title">modules_run</div><div class="modules-line">`;
-        html += report.modules_run.map(mod => `<span class="mod">${escapeHtml(mod)}</span>`).join('<span class="sep"> · </span>');
+        html += `<div class="section"><div class="section-title">Modules Run</div><div class="modules-line">`;
+        html += report.modules_run.map(mod => `<span class="mod">${escapeHtml(mod)}</span>`).join('');
         html += `</div></div>`;
     }
 
@@ -360,10 +366,21 @@ function buildMarkdown(report, prior) {
     return lines.join('\n').trim() + '\n';
 }
 
+function wireCopy(id, getContent) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const act = () => copyOut(btn, getContent());
+    btn.addEventListener('click', act);
+    btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); }
+    });
+}
+
 function copyOut(btn, content) {
-    const original = btn.textContent;
-    const done = () => { btn.textContent = 'Copied!'; setTimeout(() => (btn.textContent = original), 1600); };
-    const fail = () => { btn.textContent = 'Copy failed'; setTimeout(() => (btn.textContent = original), 1600); };
+    const label = btn.querySelector('.lbl') || btn;
+    const original = label.textContent;
+    const done = () => { label.textContent = 'Copied!'; setTimeout(() => (label.textContent = original), 1600); };
+    const fail = () => { label.textContent = 'Failed'; setTimeout(() => (label.textContent = original), 1600); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(content).then(done).catch(() => fallbackCopy(content, done, fail));
     } else {
