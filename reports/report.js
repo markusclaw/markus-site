@@ -238,7 +238,7 @@ function renderGlobalSystems(report) {
 
     return `
         <div class="section global-systems">
-            <div class="section-title">Global Systems</div>
+            <div class="section-title">Global Systems <span class="gs-asof">· as of ${escapeHtml(formatDateShort(report.date))}</span></div>
             <div class="gs-body">
                 <div class="singularity">
                     <div class="gauge-face lg">${gaugeSvg(comp, 'lg')}<div class="sing-center"><div class="sing-pct">${pct}%</div><div class="sing-sub">Singularity</div></div></div>
@@ -294,6 +294,10 @@ async function loadReports() {
             listContainer.appendChild(item);
         });
 
+        // Global Systems board — always reflects the latest report, independent of selection
+        const gs = document.getElementById('global-systems');
+        if (gs) gs.innerHTML = reports.length ? renderGlobalSystems(reports[0]) : '';
+
         if (reports.length > 0) {
             selectReport(0, listContainer.querySelector('.report-list-item'));
         } else {
@@ -344,9 +348,6 @@ function renderReportDetail(report, prior) {
                 </div>
             </div>
     `;
-
-    // Global Systems gauge board
-    html += renderGlobalSystems(report);
 
     // Scores: per-metric line graphs + trend + detail
     if (report.scores) {
