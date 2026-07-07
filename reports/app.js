@@ -29,9 +29,9 @@ function sevRank(s) { return ({ info: 0, warning: 1, error: 2, critical: 3 })[St
 function statusClass(s) {
     s = String(s || '').toLowerCase();
     if (['online', 'active', 'ok', 'nominal', 'operational', 'up'].includes(s)) return 'ok';
-    if (['warn', 'warning', 'degraded', 'idle', 'standby'].includes(s)) return s === 'idle' || s === 'standby' ? 'dim' : 'warn';
+    if (['warn', 'warning', 'degraded'].includes(s)) return 'warn';
     if (['offline', 'error', 'down', 'critical', 'crit', 'dead'].includes(s)) return 'bad';
-    return 'dim';
+    return 'dim'; // idle, standby, unknown
 }
 function sdot(s) { return `<span class="sdot ${statusClass(s)}"></span>`; }
 
@@ -145,36 +145,55 @@ function updateHeartbeat() {
     if (sub) sub.textContent = vitals && vitals.lastPulse ? 'pulse ' + relTime(vitals.lastPulse) : '';
 }
 
-/* ============================ shell ============================ */
-const NAV = [
-    { phase: 'Phase 0 · Kernel', items: [
-        { id: 'mission', label: 'Mission Control', on: true },
-        { id: 'runtime', label: 'Runtime', on: true },
-        { id: 'agents', label: 'Agents', on: true },
-        { id: 'diagnostics', label: 'Diagnostics', on: true }
-    ] },
-    { phase: 'Phase 1 · Observability', items: ['Event Stream', 'Timeline', 'Logs', 'Alerts', 'Health'].map(l => ({ id: slug(l), label: l })) },
-    { phase: 'Phase 2 · Cognition', items: ['Memory', 'Reasoning', 'Reflection', 'Planning'].map(l => ({ id: slug(l), label: l })) },
-    { phase: 'Phase 3 · Execution', items: ['Scheduler', 'Queues', 'Workloads', 'Automation'].map(l => ({ id: slug(l), label: l })) },
-    { phase: 'Phase 4 · Intelligence', items: ['Knowledge Graph', 'Relationships', 'Semantic Search', 'Context Explorer'].map(l => ({ id: slug(l), label: l })) },
-    { phase: 'Phase 5 · Evolution', items: ['Trend Analysis', 'Learning Metrics', 'Improvement Engine', 'Autonomous Optimization'].map(l => ({ id: slug(l), label: l })) },
-    { phase: 'Outputs', items: [{ id: 'reports', label: 'Reports', on: true }] }
+/* ============================ subsystem registry ============================
+   One source of truth per subsystem. To bring a phase online, add `on: true`,
+   a `render` fn, and (optionally) a `health` fn + `tile` label. Nav, routing,
+   and Mission Control health tiles all derive from this list — nothing else
+   needs to change. */
+const SUBSYSTEMS = [
+    { id: 'mission',     label: 'Mission Control', phase: 'Phase 0 · Kernel', tile: 'Kernel', on: true, render: renderMission,     health: kernelHealth },
+    { id: 'runtime',     label: 'Runtime',         phase: 'Phase 0 · Kernel', tile: 'Runtime', on: true, render: renderRuntime,     health: runtimeHealth },
+    { id: 'agents',      label: 'Agents',          phase: 'Phase 0 · Kernel', tile: 'Agents', on: true, render: renderAgents,      health: agentsHealth },
+    { id: 'diagnostics', label: 'Diagnostics',     phase: 'Phase 0 · Kernel', tile: 'Diagnostics', on: true, render: renderDiagnostics, health: diagnosticsHealth },
+
+    { id: 'event-stream', label: 'Event Stream', phase: 'Phase 1 · Observability' },
+    { id: 'timeline',     label: 'Timeline',     phase: 'Phase 1 · Observability' },
+    { id: 'logs',         label: 'Logs',         phase: 'Phase 1 · Observability' },
+    { id: 'alerts',       label: 'Alerts',       phase: 'Phase 1 · Observability' },
+    { id: 'health',       label: 'Health',       phase: 'Phase 1 · Observability' },
+
+    { id: 'memory',     label: 'Memory',     phase: 'Phase 2 · Cognition' },
+    { id: 'reasoning',  label: 'Reasoning',  phase: 'Phase 2 · Cognition' },
+    { id: 'reflection', label: 'Reflection', phase: 'Phase 2 · Cognition' },
+    { id: 'planning',   label: 'Planning',   phase: 'Phase 2 · Cognition' },
+
+    { id: 'scheduler',  label: 'Scheduler',  phase: 'Phase 3 · Execution' },
+    { id: 'queues',     label: 'Queues',     phase: 'Phase 3 · Execution' },
+    { id: 'workloads',  label: 'Workloads',  phase: 'Phase 3 · Execution' },
+    { id: 'automation', label: 'Automation', phase: 'Phase 3 · Execution' },
+
+    { id: 'knowledge-graph',  label: 'Knowledge Graph',  phase: 'Phase 4 · Intelligence' },
+    { id: 'relationships',    label: 'Relationships',    phase: 'Phase 4 · Intelligence' },
+    { id: 'semantic-search',  label: 'Semantic Search',  phase: 'Phase 4 · Intelligence' },
+    { id: 'context-explorer', label: 'Context Explorer', phase: 'Phase 4 · Intelligence' },
+
+    { id: 'trend-analysis',          label: 'Trend Analysis',          phase: 'Phase 5 · Evolution' },
+    { id: 'learning-metrics',        label: 'Learning Metrics',        phase: 'Phase 5 · Evolution' },
+    { id: 'improvement-engine',      label: 'Improvement Engine',      phase: 'Phase 5 · Evolution' },
+    { id: 'autonomous-optimization', label: 'Autonomous Optimization', phase: 'Phase 5 · Evolution' },
+
+    { id: 'reports', label: 'Reports', phase: 'Outputs', on: true, render: renderReports }
 ];
-function slug(l) { return l.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
-const ENABLED = { mission: 1, runtime: 1, agents: 1, diagnostics: 1, reports: 1 };
-const PHASE_OF = {};
-NAV.forEach(g => g.items.forEach(it => { PHASE_OF[it.id] = g.phase; }));
+function getSub(id) { return SUBSYSTEMS.find(s => s.id === id); }
 
 function renderNav() {
     let h = `<div class="os-brand"><span class="os-logo">◆</span> MARKUS <b>OS</b></div>`;
-    for (const g of NAV) {
-        h += `<div class="nav-group"><div class="nav-phase">${esc(g.phase)}</div>`;
-        for (const it of g.items) {
-            const on = ENABLED[it.id];
-            h += `<a class="nav-item${on ? '' : ' locked'}${currentRoute === it.id ? ' active' : ''}" href="#/${it.id}">${esc(it.label)}${on ? '' : '<span class="lock">planned</span>'}</a>`;
-        }
-        h += `</div>`;
+    let phase = null;
+    for (const s of SUBSYSTEMS) {
+        if (s.phase !== phase) { if (phase !== null) h += `</div>`; h += `<div class="nav-group"><div class="nav-phase">${esc(s.phase)}</div>`; phase = s.phase; }
+        h += `<a class="nav-item${s.on ? '' : ' locked'}${currentRoute === s.id ? ' active' : ''}" href="#/${s.id}">${esc(s.label)}${s.on ? '' : '<span class="lock">planned</span>'}</a>`;
     }
+    if (phase !== null) h += `</div>`;
     document.getElementById('nav').innerHTML = h;
 }
 
@@ -207,14 +226,9 @@ function panel(title, body, cls) { return `<section class="panel ${cls || ''}"><
 
 /* --- Mission Control --- */
 function renderMission() {
-    const subs = [
-        { id: 'kernel', label: 'Kernel', h: kernelHealth() },
-        { id: 'runtime', label: 'Runtime', h: runtimeHealth() },
-        { id: 'agents', label: 'Agents', h: agentsHealth() },
-        { id: 'diagnostics', label: 'Diagnostics', h: diagnosticsHealth() }
-    ];
+    const subs = SUBSYSTEMS.filter(s => s.on && s.health).map(s => ({ id: s.id, label: s.tile || s.label, h: s.health() }));
     const ov = overallStatus();
-    const tiles = subs.map(s => `<a class="hx-tile ${s.h.status}" href="#/${s.id === 'kernel' ? 'mission' : s.id}"><div class="hx-top">${sdot(s.h.status)}<span class="hx-name">${s.label}</span><span class="hx-badge ${s.h.status}">${STATUS_LABEL[s.h.status] || '—'}</span></div><div class="hx-detail">${esc(s.h.detail)}</div></a>`).join('');
+    const tiles = subs.map(s => `<a class="hx-tile ${s.h.status}" href="#/${s.id}"><div class="hx-top">${sdot(s.h.status)}<span class="hx-name">${s.label}</span><span class="hx-badge ${s.h.status}">${STATUS_LABEL[s.h.status] || '—'}</span></div><div class="hx-detail">${esc(s.h.detail)}</div></a>`).join('');
 
     // attention: open diagnostics warn+
     const att = (DATA.diagnostics ? DATA.diagnostics.events : []).filter(e => sevRank(e.severity) >= 1).sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).slice(0, 5)
@@ -348,31 +362,33 @@ function trend(d) {
 
 /* --- planned subsystem stub --- */
 function renderPlanned(id, label) {
-    return viewHeader(label, `${esc(PHASE_OF[id] || '')} · <span class="warn">PLANNED</span>`)
+    const phase = (getSub(id) && getSub(id).phase) || '';
+    return viewHeader(label, `${esc(phase)} · <span class="warn">PLANNED</span>`)
         + `<div class="planned"><div class="planned-icon">◇</div><div class="planned-title">${esc(label)} subsystem is scheduled.</div>
         <div class="planned-sub">This subsystem will publish telemetry, health, logs and history into the same diagnostic framework as the kernel. Not yet online.</div>
-        <div class="planned-tag">${esc(PHASE_OF[id] || '')}</div></div>`;
+        <div class="planned-tag">${esc(phase)}</div></div>`;
 }
 
 /* ============================ router ============================ */
 function route() {
     const hash = (location.hash || '#/mission').replace(/^#\//, '');
     const parts = hash.split('/');
-    const id = parts[0] || 'mission';
+    let id = parts[0] || 'mission';
+    let sub = getSub(id);
+    if (!sub) { id = 'mission'; sub = getSub(id); }
     currentRoute = id;
     let html;
-    if (id === 'mission') html = renderMission();
-    else if (id === 'runtime') html = renderRuntime();
-    else if (id === 'agents') html = renderAgents();
-    else if (id === 'diagnostics') html = renderDiagnostics();
-    else if (id === 'reports') { reportIdx = Math.max(0, Math.min(DATA.reports.length - 1, parseInt(parts[1], 10) || 0)); html = renderReports(); }
-    else { const label = navLabel(id); html = renderPlanned(id, label); }
+    if (sub.on && sub.render) {
+        if (id === 'reports') reportIdx = Math.max(0, Math.min(DATA.reports.length - 1, parseInt(parts[1], 10) || 0));
+        html = sub.render();
+    } else {
+        html = renderPlanned(sub.id, sub.label);
+    }
     document.getElementById('view').innerHTML = html;
     renderNav();
     if (id === 'reports') { const b = document.getElementById('copy-md'); if (b) b.addEventListener('click', () => copyMarkdown(DATA.reports[reportIdx])); }
     document.getElementById('view').scrollTop = 0;
 }
-function navLabel(id) { for (const g of NAV) for (const it of g.items) if (it.id === id) return it.label; return id; }
 
 /* ---------- reports copy ---------- */
 function copyMarkdown(r) {
@@ -395,7 +411,8 @@ async function boot() {
     if (!location.hash) location.hash = '#/mission';
     route();
     window.addEventListener('hashchange', route);
-    setInterval(renderTopStrip, 15000);
+    // Note: no top-strip re-render interval — it would restart the EKG animation.
+    // The heartbeat ticker (startHeartbeat) updates the pulse in place.
 }
 
 function showConsole() { document.getElementById('pin-gate').classList.add('hidden'); document.getElementById('console').classList.remove('hidden'); }
