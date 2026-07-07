@@ -1,0 +1,144 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "retention_h": 24,
+  "lines": [
+    {
+      "ts": "2026-07-07T20:43:48.000Z",
+      "level": "debug",
+      "subsystem": "kernel",
+      "message": "heartbeat tick — state=active queue=2"
+    },
+    {
+      "ts": "2026-07-07T20:43:00.000Z",
+      "level": "info",
+      "subsystem": "agents",
+      "message": "memory-curator: dedup pass complete (3 removed)"
+    },
+    {
+      "ts": "2026-07-07T20:41:00.000Z",
+      "level": "warn",
+      "subsystem": "runtime",
+      "message": "disk usage 98% on / (4.3GB free)"
+    },
+    {
+      "ts": "2026-07-07T20:40:00.000Z",
+      "level": "error",
+      "subsystem": "agents",
+      "message": "ollama-bridge: dial tcp 10.0.0.2:11434: connect: no route to host"
+    },
+    {
+      "ts": "2026-07-07T20:39:54.000Z",
+      "level": "info",
+      "subsystem": "agents",
+      "message": "ollama-bridge: retry scheduled in 60s (attempt 4)"
+    },
+    {
+      "ts": "2026-07-07T20:37:00.000Z",
+      "level": "info",
+      "subsystem": "execution",
+      "message": "task refactor-report-renderer completed in 812ms"
+    },
+    {
+      "ts": "2026-07-07T20:35:00.000Z",
+      "level": "debug",
+      "subsystem": "cognition",
+      "message": "context assembled: 5 memory files, 42% window"
+    },
+    {
+      "ts": "2026-07-07T20:32:00.000Z",
+      "level": "info",
+      "subsystem": "evolution",
+      "message": "improvement-engine: ranked 3 proposals"
+    },
+    {
+      "ts": "2026-07-07T20:29:00.000Z",
+      "level": "warn",
+      "subsystem": "runtime",
+      "message": "sonnet cold-start fallback (latency 12.4s)"
+    },
+    {
+      "ts": "2026-07-07T20:28:00.000Z",
+      "level": "info",
+      "subsystem": "runtime",
+      "message": "model route: haiku 82% / sonnet 18% (last 60m)"
+    },
+    {
+      "ts": "2026-07-07T20:22:00.000Z",
+      "level": "debug",
+      "subsystem": "scheduler",
+      "message": "cron eval: next run 03:00 (-06:00)"
+    },
+    {
+      "ts": "2026-07-07T20:16:00.000Z",
+      "level": "info",
+      "subsystem": "agents",
+      "message": "activity-reviewer: scanned 6 sessions"
+    },
+    {
+      "ts": "2026-07-07T20:09:00.000Z",
+      "level": "info",
+      "subsystem": "memory",
+      "message": "archived 0 stale entries (threshold not met)"
+    },
+    {
+      "ts": "2026-07-07T20:03:00.000Z",
+      "level": "debug",
+      "subsystem": "kernel",
+      "message": "gc: freed 18MB working set"
+    },
+    {
+      "ts": "2026-07-07T19:49:00.000Z",
+      "level": "info",
+      "subsystem": "execution",
+      "message": "git push origin main → 7a750ad"
+    },
+    {
+      "ts": "2026-07-07T19:41:00.000Z",
+      "level": "warn",
+      "subsystem": "cognition",
+      "message": "autonomy: 6 clarifications across 14 tasks"
+    },
+    {
+      "ts": "2026-07-07T19:27:00.000Z",
+      "level": "info",
+      "subsystem": "runtime",
+      "message": "whatsapp-bridge latency 1.8s (nominal)"
+    },
+    {
+      "ts": "2026-07-07T19:12:00.000Z",
+      "level": "debug",
+      "subsystem": "agents",
+      "message": "research-agent → standby (idle 40m)"
+    },
+    {
+      "ts": "2026-07-07T18:54:00.000Z",
+      "level": "info",
+      "subsystem": "evolution",
+      "message": "nightly audit composite 6.4 (-0.1)"
+    },
+    {
+      "ts": "2026-07-07T18:24:00.000Z",
+      "level": "error",
+      "subsystem": "runtime",
+      "message": "write /tmp/cache: no space left on device (recovered)"
+    },
+    {
+      "ts": "2026-07-07T18:23:00.000Z",
+      "level": "info",
+      "subsystem": "runtime",
+      "message": "cache evicted 220MB → write recovered"
+    },
+    {
+      "ts": "2026-07-07T17:44:00.000Z",
+      "level": "info",
+      "subsystem": "kernel",
+      "message": "boot sequence complete · markus-kernel 0.1"
+    },
+    {
+      "ts": "2026-07-07T17:39:00.000Z",
+      "level": "debug",
+      "subsystem": "system",
+      "message": "interfaces: whatsapp=online discord=planned voice=planned"
+    }
+  ]
+}

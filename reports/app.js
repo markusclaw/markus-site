@@ -2,7 +2,7 @@
    Runtime state (data/*.json) is the source of truth. Reports are one output. */
 
 const EXPECTED_PIN = '000000';
-var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, heartbeat: null, reports: [] };
+var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, reports: [] };
 let hbTimer = null, vitals = null, currentRoute = 'mission';
 
 /* ============================ helpers ============================ */
@@ -67,13 +67,13 @@ function lineChart(series, opt) {
 async function getJSON(path) { try { const r = await fetch(path); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 
 async function loadAll() {
-    const [system, runtime, agents, diagnostics, events, heartbeat, manifest] = await Promise.all([
+    const [system, runtime, agents, diagnostics, events, logs, heartbeat, manifest] = await Promise.all([
         getJSON('./data/system.json'), getJSON('./data/runtime.json'), getJSON('./data/agents.json'),
-        getJSON('./data/diagnostics.json'), getJSON('./data/events.json'), getJSON('./data/heartbeat.json'),
-        getJSON('./data/manifest.json')
+        getJSON('./data/diagnostics.json'), getJSON('./data/events.json'), getJSON('./data/logs.json'),
+        getJSON('./data/heartbeat.json'), getJSON('./data/manifest.json')
     ]);
     DATA.system = system; DATA.runtime = runtime; DATA.agents = agents;
-    DATA.diagnostics = diagnostics; DATA.events = events; DATA.heartbeat = heartbeat;
+    DATA.diagnostics = diagnostics; DATA.events = events; DATA.logs = logs; DATA.heartbeat = heartbeat;
     const files = Array.isArray(manifest) ? manifest : (manifest && manifest.reports) || [];
     const reports = [];
     for (const f of files) { const r = await getJSON('./data/' + f); if (r) reports.push(r); }
@@ -156,11 +156,11 @@ const SUBSYSTEMS = [
     { id: 'agents',      label: 'Agents',          phase: 'Phase 0 · Kernel', tile: 'Agents', on: true, render: renderAgents,      health: agentsHealth },
     { id: 'diagnostics', label: 'Diagnostics',     phase: 'Phase 0 · Kernel', tile: 'Diagnostics', on: true, render: renderDiagnostics, health: diagnosticsHealth },
 
-    { id: 'event-stream', label: 'Event Stream', phase: 'Phase 1 · Observability' },
-    { id: 'timeline',     label: 'Timeline',     phase: 'Phase 1 · Observability' },
-    { id: 'logs',         label: 'Logs',         phase: 'Phase 1 · Observability' },
-    { id: 'alerts',       label: 'Alerts',       phase: 'Phase 1 · Observability' },
-    { id: 'health',       label: 'Health',       phase: 'Phase 1 · Observability' },
+    { id: 'event-stream', label: 'Event Stream', phase: 'Phase 1 · Observability', on: true, render: renderEventStream, health: eventStreamHealth },
+    { id: 'timeline',     label: 'Timeline',     phase: 'Phase 1 · Observability', on: true, render: renderTimeline,    health: eventStreamHealth },
+    { id: 'logs',         label: 'Logs',         phase: 'Phase 1 · Observability', on: true, render: renderLogs,        health: logsHealth },
+    { id: 'alerts',       label: 'Alerts',       phase: 'Phase 1 · Observability', on: true, render: renderAlerts,      health: alertsHealth },
+    { id: 'health',       label: 'Health',       phase: 'Phase 1 · Observability', on: true, render: renderHealth,      health: healthHealth },
 
     { id: 'memory',     label: 'Memory',     phase: 'Phase 2 · Cognition' },
     { id: 'reasoning',  label: 'Reasoning',  phase: 'Phase 2 · Cognition' },
@@ -226,7 +226,7 @@ function panel(title, body, cls) { return `<section class="panel ${cls || ''}"><
 
 /* --- Mission Control --- */
 function renderMission() {
-    const subs = SUBSYSTEMS.filter(s => s.on && s.health).map(s => ({ id: s.id, label: s.tile || s.label, h: s.health() }));
+    const subs = SUBSYSTEMS.filter(s => s.on && s.tile).map(s => ({ id: s.id, label: s.tile, h: s.health() }));
     const ov = overallStatus();
     const tiles = subs.map(s => `<a class="hx-tile ${s.h.status}" href="#/${s.id}"><div class="hx-top">${sdot(s.h.status)}<span class="hx-name">${s.label}</span><span class="hx-badge ${s.h.status}">${STATUS_LABEL[s.h.status] || '—'}</span></div><div class="hx-detail">${esc(s.h.detail)}</div></a>`).join('');
 
@@ -367,6 +367,90 @@ function renderPlanned(id, label) {
         + `<div class="planned"><div class="planned-icon">◇</div><div class="planned-title">${esc(label)} subsystem is scheduled.</div>
         <div class="planned-sub">This subsystem will publish telemetry, health, logs and history into the same diagnostic framework as the kernel. Not yet online.</div>
         <div class="planned-tag">${esc(phase)}</div></div>`;
+}
+
+/* ============================ Phase 1 · Observability ============================ */
+function sevForType(t) {
+    t = String(t || '').toLowerCase();
+    if (['alert', 'error', 'critical'].includes(t)) return 'bad';
+    if (['heartbeat', 'task_completed', 'report'].includes(t)) return 'ok';
+    return 'dim';
+}
+function statusPill(h) { return `<span class="sys-status ${h.status}">${sdot(h.status)} ${STATUS_LABEL[h.status] || '—'}</span>`; }
+
+let eventFilter = 'all';
+function setEventFilter(t) { eventFilter = t; const v = document.getElementById('view'); if (v) { v.innerHTML = renderEventStream(); v.scrollTop = 0; } }
+function eventStreamHealth() { const n = DATA.events ? DATA.events.events.length : 0; return { status: 'ok', detail: n + ' events' }; }
+function renderEventStream() {
+    const evs = (DATA.events ? DATA.events.events : []).slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const types = Array.from(new Set(evs.map(e => e.type)));
+    const chips = ['all'].concat(types).map(t => `<span class="fchip${eventFilter === t ? ' active' : ''}" onclick="setEventFilter('${t}')">${esc(t)}${t === 'all' ? ' · ' + evs.length : ''}</span>`).join('');
+    const shown = evs.filter(e => eventFilter === 'all' || e.type === eventFilter);
+    const rows = shown.map(e => `<div class="es-row"><span class="es-t">${clockTime(e.ts)}</span><span class="sdot ${sevForType(e.type)}"></span><span class="es-type">${esc(e.type)}</span><span class="es-sub">${esc(e.subsystem)}</span><span class="es-msg">${esc(e.message)}</span><span class="es-rel">${relTime(e.ts)}</span></div>`).join('') || '<div class="muted pad">No events.</div>';
+    return viewHeader('Event Stream', 'Live system event feed', statusPill(eventStreamHealth())) + `<div class="fchips">${chips}</div><div class="es-list">${rows}</div>`;
+}
+
+function renderTimeline() {
+    const evs = (DATA.events ? DATA.events.events : []).slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const rows = evs.map(e => `<div class="tl-node"><div class="tl-time">${clockTime(e.ts)}<span class="tl-rel">${relTime(e.ts)}</span></div><div class="tl-rail"><span class="tl-marker ${sevForType(e.type)}"></span></div><div class="tl-card"><div class="tl-h"><span class="tl-type">${esc(e.type)}</span><span class="tl-sub">${esc(e.subsystem)}</span></div><div class="tl-msg">${esc(e.message)}</div></div></div>`).join('') || '<div class="muted pad">No events.</div>';
+    return viewHeader('Timeline', 'Chronological system events', statusPill(eventStreamHealth())) + `<div class="timeline">${rows}</div>`;
+}
+
+let logFilter = 'all';
+function setLogFilter(l) { logFilter = l; const v = document.getElementById('view'); if (v) { v.innerHTML = renderLogs(); v.scrollTop = 0; } }
+function logsHealth() { const lines = DATA.logs ? DATA.logs.lines : []; const e = lines.filter(l => l.level === 'error').length; return { status: e > 0 ? 'warn' : 'ok', detail: lines.length + ' lines' + (e ? ' · ' + e + ' errors' : '') }; }
+function renderLogs() {
+    const lines = (DATA.logs ? DATA.logs.lines : []).slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const levels = ['all', 'debug', 'info', 'warn', 'error'];
+    const cnt = {}; lines.forEach(l => cnt[l.level] = (cnt[l.level] || 0) + 1);
+    const chips = levels.map(l => `<span class="fchip${logFilter === l ? ' active' : ''}" onclick="setLogFilter('${l}')">${l}${l === 'all' ? ' · ' + lines.length : (cnt[l] ? ' · ' + cnt[l] : '')}</span>`).join('');
+    const shown = lines.filter(l => logFilter === 'all' || l.level === logFilter);
+    const rows = shown.map(l => `<div class="log ${esc(l.level)}"><span class="log-t">${clockTime(l.ts)}</span><span class="log-lvl ${esc(l.level)}">${esc(String(l.level).toUpperCase())}</span><span class="log-sub">${esc(l.subsystem)}</span><span class="log-msg">${esc(l.message)}</span></div>`).join('') || '<div class="muted pad">No log lines.</div>';
+    return viewHeader('Logs', `retention ${DATA.logs ? DATA.logs.retention_h : 24}h`, statusPill(logsHealth())) + `<div class="fchips">${chips}</div><div class="logview">${rows}</div>`;
+}
+
+function computeAlerts() {
+    const out = [];
+    const rt = (DATA.runtime && DATA.runtime.metrics) || {};
+    for (const k in rt) {
+        const m = rt[k], st = metricState(m);
+        if (st !== 'ok') out.push({ severity: st === 'crit' ? 'critical' : 'warning', rule: `${m.label} ≥ ${st === 'crit' ? m.crit : m.warn}${m.unit === '%' ? '%' : ''}`, subsystem: 'runtime', value: `${fmt1(m.now)}${m.unit === '%' ? '%' : ''}`, since: DATA.runtime && DATA.runtime.updated });
+    }
+    for (const e of (DATA.diagnostics ? DATA.diagnostics.events : [])) {
+        if (sevRank(e.severity) >= 2) out.push({ severity: e.severity, rule: e.message, subsystem: e.subsystem, value: '', since: e.ts, rec: e.recommendation });
+    }
+    return out.sort((a, b) => sevRank(b.severity) - sevRank(a.severity) || new Date(b.since) - new Date(a.since));
+}
+function alertsHealth() { const a = computeAlerts(); const top = a.reduce((x, al) => Math.max(x, sevRank(al.severity)), 0); return { status: top >= 3 ? 'crit' : top >= 1 ? 'warn' : 'ok', detail: a.length + ' firing' }; }
+function renderAlerts() {
+    const a = computeAlerts();
+    const c = { critical: 0, error: 0, warning: 0 }; a.forEach(x => c[x.severity] = (c[x.severity] || 0) + 1);
+    const chips = ['critical', 'error', 'warning'].map(s => `<span class="sev-chip ${s}">${c[s] || 0} ${s}</span>`).join('');
+    const rows = a.map(al => `<div class="alert ${al.severity}"><div class="alert-l"><span class="sev ${al.severity}">${esc(al.severity)}</span></div><div class="alert-body"><div class="alert-top"><span class="alert-rule">${esc(al.rule)}</span><span class="alert-since">firing ${al.since ? relTime(al.since) : ''}</span></div><div class="alert-meta">${esc(al.subsystem)}${al.value ? ' · <b>' + esc(al.value) + '</b>' : ''}</div>${al.rec ? `<div class="alert-rec">↳ ${esc(al.rec)}</div>` : ''}</div></div>`).join('') || '<div class="muted pad">No firing alerts. All clear.</div>';
+    return viewHeader('Alerts', a.length ? `${a.length} firing` : 'All clear', chips) + `<div class="alert-list">${rows}</div>`;
+}
+
+function computeHealthChecks() {
+    const checks = [];
+    checks.push({ name: 'Kernel pulse', group: 'Core', status: isAlive() ? 'ok' : 'bad', detail: isAlive() ? 'active' : 'no pulse' });
+    for (const s of SUBSYSTEMS.filter(x => x.on && x.tile)) { const h = s.health(); checks.push({ name: s.tile, group: 'Subsystems', status: h.status, detail: h.detail }); }
+    for (const a of (DATA.agents ? DATA.agents.agents : [])) { const sc = statusClass(a.status); checks.push({ name: a.name, group: 'Agents', status: sc === 'bad' ? 'bad' : (sc === 'ok' ? 'ok' : 'dim'), detail: a.status }); }
+    for (const m of ((DATA.system && DATA.system.machines) || [])) checks.push({ name: m.name, group: 'Machines', status: m.status === 'online' ? 'ok' : 'bad', detail: m.role || m.status });
+    for (const i of ((DATA.system && DATA.system.interfaces) || [])) checks.push({ name: i.name, group: 'Interfaces', status: i.status === 'online' ? 'ok' : (i.status === 'planned' ? 'dim' : 'bad'), detail: i.status });
+    return checks;
+}
+function healthHealth() { const ch = computeHealthChecks(); const bad = ch.filter(c => c.status === 'bad').length; const pass = ch.filter(c => c.status === 'ok').length; return { status: bad >= 2 ? 'crit' : bad ? 'warn' : 'ok', detail: pass + '/' + ch.length + ' passing' }; }
+function renderHealth() {
+    const ch = computeHealthChecks();
+    const groups = [], gmap = {};
+    ch.forEach(c => { if (!gmap[c.group]) { gmap[c.group] = []; groups.push(c.group); } gmap[c.group].push(c); });
+    const pass = ch.filter(c => c.status === 'ok').length, bad = ch.filter(c => c.status === 'bad').length;
+    let body = '';
+    for (const g of groups) {
+        const items = gmap[g].map(c => `<div class="hc"><span class="sdot ${c.status}"></span><span class="hc-name">${esc(c.name)}</span><span class="hc-detail">${esc(c.detail || '')}</span><span class="hc-status ${c.status}">${c.status === 'ok' ? 'UP' : (c.status === 'bad' ? 'DOWN' : c.status === 'warn' ? 'WARN' : '—')}</span></div>`).join('');
+        body += panel(g, `<div class="hc-list">${items}</div>`);
+    }
+    return viewHeader('Health', `${pass}/${ch.length} checks passing${bad ? ' · <span class="bad">' + bad + ' down</span>' : ''}`, statusPill(healthHealth())) + `<div class="mc-grid">${body}</div>`;
 }
 
 /* ============================ router ============================ */
