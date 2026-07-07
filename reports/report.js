@@ -179,6 +179,76 @@ function buildSparkline(values) {
     </svg>`;
 }
 
+// Semicircular gauge (0–10) as inline SVG. size: 'sm' | 'lg'
+function gaugeSvg(value, size) {
+    const f = Math.max(0, Math.min(1, (value || 0) / 10));
+    const cfg = size === 'lg'
+        ? { W: 200, H: 116, cx: 100, cy: 104, r: 84, sw: 13 }
+        : { W: 120, H: 70, cx: 60, cy: 64, r: 50, sw: 9 };
+    const { W, H, cx, cy, r, sw } = cfg;
+    const pt = (a) => { const rad = a * Math.PI / 180; return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)]; };
+    const arc = (a0, a1, steps) => {
+        const p = [];
+        for (let i = 0; i <= steps; i++) {
+            const a = a0 + (a1 - a0) * i / steps;
+            const [x, y] = pt(a);
+            p.push(x.toFixed(1) + ',' + y.toFixed(1));
+        }
+        return p.join(' ');
+    };
+    const track = arc(180, 0, 48);
+    const valEnd = 180 - 180 * f;
+    const valLine = f > 0.005
+        ? `<polyline class="gauge-value" points="${arc(180, valEnd, Math.max(2, Math.round(48 * f)))}" vector-effect="non-scaling-stroke" style="stroke-width:${sw}"/>`
+        : '';
+    return `<svg class="gauge-svg" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true">
+        <polyline class="gauge-track" points="${track}" vector-effect="non-scaling-stroke" style="stroke-width:${sw}"/>
+        ${valLine}
+    </svg>`;
+}
+
+function singularityStatus(comp) {
+    if (comp >= 9) return 'Singularity Imminent';
+    if (comp >= 7.5) return 'Nominal';
+    if (comp >= 6) return 'Stabilizing';
+    if (comp >= 4) return 'Calibrating';
+    return 'Booting';
+}
+
+// Top "Global Systems" gauge board for the current report
+function renderGlobalSystems(report) {
+    if (!report.scores) return '';
+    const comp = compositeScore(report);
+    const pct = comp === null ? 0 : Math.round((comp / 10) * 100);
+
+    let nominal = 0, total = 0, gauges = '';
+    for (const m of METRICS) {
+        const s = metricScore(report.scores, m.key);
+        if (s === null) continue;
+        total++;
+        if (s >= 7) nominal++;
+        gauges += `
+            <div class="gauge">
+                <div class="gauge-face">${gaugeSvg(s, 'sm')}<div class="gauge-num">${fmt1(s)}</div></div>
+                <div class="gauge-name">${escapeHtml(m.label)}</div>
+            </div>`;
+    }
+    const allGo = total > 0 && nominal === total;
+    const statusLine = `${singularityStatus(comp)} · ${allGo ? 'all systems go' : nominal + '/' + total + ' systems nominal'}`;
+
+    return `
+        <div class="section global-systems">
+            <div class="section-title">Global Systems</div>
+            <div class="gs-body">
+                <div class="singularity">
+                    <div class="gauge-face lg">${gaugeSvg(comp, 'lg')}<div class="sing-center"><div class="sing-pct">${pct}%</div><div class="sing-sub">Singularity</div></div></div>
+                    <div class="sing-status">${escapeHtml(statusLine)}</div>
+                </div>
+                <div class="gauge-grid">${gauges}</div>
+            </div>
+        </div>`;
+}
+
 // info | warning | error → css class; anything else → info
 function severityClass(sev) {
     const s = String(sev || 'info').toLowerCase();
@@ -275,7 +345,10 @@ function renderReportDetail(report, prior) {
             </div>
     `;
 
-    // Scores: linear progress bars + trend + detail
+    // Global Systems gauge board
+    html += renderGlobalSystems(report);
+
+    // Scores: per-metric line graphs + trend + detail
     if (report.scores) {
         html += `<div class="section"><div class="section-title">North Star Metrics</div><div class="scores-list">`;
         for (const m of METRICS) {
