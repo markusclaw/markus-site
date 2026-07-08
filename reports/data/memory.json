@@ -1,0 +1,86 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "tiers": {
+    "working": {
+      "label": "Working Memory",
+      "used": 42,
+      "capacity": 100,
+      "unit": "% ctx"
+    },
+    "long_term": {
+      "label": "Long-Term Store",
+      "entries": 127,
+      "size_mb": 8.6
+    },
+    "semantic": {
+      "label": "Semantic Graph",
+      "nodes": 96,
+      "edges": 214
+    }
+  },
+  "metrics": {
+    "entries": 127,
+    "size_mb": 8.6,
+    "dedup_ratio": 0.12,
+    "compression_ratio": 2.4,
+    "conflicts": 1,
+    "orphans": 4,
+    "recall_hit_rate": 0.86
+  },
+  "recall_series": [
+    0.86,
+    0.88,
+    0.87,
+    0.89,
+    0.89,
+    0.92,
+    0.93,
+    0.95,
+    0.95,
+    0.96,
+    0.98,
+    0.97,
+    0.96,
+    0.97,
+    0.93,
+    0.91,
+    0.89,
+    0.86,
+    0.86,
+    0.87,
+    0.84,
+    0.84,
+    0.85,
+    0.88,
+    0.9,
+    0.93,
+    0.96,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "recent": [
+    {
+      "ts": "2026-07-07T11:05:33-06:00",
+      "op": "dedup",
+      "detail": "3 redundant entries merged"
+    },
+    {
+      "ts": "2026-07-07T09:40:00-06:00",
+      "op": "write",
+      "detail": "SOUL.md design philosophy updated"
+    },
+    {
+      "ts": "2026-07-06T22:10:00-06:00",
+      "op": "conflict",
+      "detail": "naming convention entry vs BLUEPRINT_STANDARD"
+    },
+    {
+      "ts": "2026-07-06T03:00:00-06:00",
+      "op": "archive",
+      "detail": "4 obsolete daily files archived"
+    }
+  ]
+}

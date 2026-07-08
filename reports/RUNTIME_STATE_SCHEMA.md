@@ -16,10 +16,20 @@ data/
   runtime.json        ← telemetry + time-series (CPU, mem, disk, tokens, cost, latency…)
   agents.json         ← agent roster (services)
   diagnostics.json    ← severity-ranked issues (INFO/WARNING/ERROR/CRITICAL)
-  events.json         ← chronological event stream
+  events.json         ← chronological event stream (Event Stream + Timeline)
+  logs.json           ← structured log tail (Logs)
+  memory.json         ← memory tiers / integrity / recall (Memory)
+  reasoning.json      ← cognitive performance metrics (Reasoning)
+  reflection.json     ← metacognition & confidence calibration (Reflection)
+  planning.json       ← goals & planning metrics (Planning)
   <YYYY-MM-DD>.json   ← nightly self-audit reports (existing)
   manifest.json       ← ["2026-07-07.json", …] list of report files
 ```
+
+**Derived views (no file of their own):** *Alerts* is computed from `runtime.json` threshold
+breaches + `diagnostics.json` (severity ≥ error). *Health* is a status page computed from the
+kernel pulse, each subsystem's `health()`, `agents.json`, and `system.json`
+(machines/interfaces). Publish good source data and these light up for free.
 
 The console computes **health** per subsystem from these files (thresholds in `runtime.json`,
 severities in `diagnostics.json`, agent statuses in `agents.json`, pulse freshness in
@@ -90,6 +100,38 @@ Add any new metric by dropping another entry in `metrics` — it auto-renders.
     "subsystem":"kernel", "message":"…" } ] }
 ```
 
+## logs.json  (structured log tail — Logs subsystem)
+```json
+{ "updated":"ISO-8601", "retention_h":24, "lines":[
+  { "ts":"ISO-8601", "level":"debug|info|warn|error", "subsystem":"runtime", "message":"…" } ] }
+```
+Newest-first in the viewer; filterable by level. `error` lines drive the Logs health status.
+
+## Phase 2 · Cognition files
+```json
+// memory.json
+{ "updated":"ISO", "tiers":{ "working":{"label":"…","used":42,"capacity":100},
+    "long_term":{"label":"…","entries":127,"size_mb":8.6},
+    "semantic":{"label":"…","nodes":96,"edges":214} },
+  "metrics":{ "entries":127,"size_mb":8.6,"dedup_ratio":0.12,"compression_ratio":2.4,
+    "conflicts":1,"orphans":4,"recall_hit_rate":0.86 },
+  "recall_series":[0.84,…], "recent":[ {"ts":"ISO","op":"dedup|write|archive|conflict","detail":"…"} ] }
+
+// reasoning.json — each metric: { label, unit, now, series }
+{ "updated":"ISO", "metrics":{ "confidence":{…}, "problem_solving":{…}, "decision_latency":{…},
+    "chain_length":{…}, "planning_depth":{…} },
+  "counters":{ "decisions":38,"clarifications":6,"self_corrections":4,"errors_recovered":2,"hallucinations_prevented":1 } }
+
+// reflection.json
+{ "updated":"ISO", "calibration":{ "predicted":0.82,"actual":0.76,"samples":38 },
+  "entries":[ {"ts":"ISO","insight":"…","action":"…","outcome":"applied|pending|rejected","confidence":0.8} ] }
+
+// planning.json
+{ "updated":"ISO", "metrics":{ "active_plans":3,"avg_depth":3.1,"avg_branching":2.4,
+    "step_success_rate":0.82,"replans":2,"blocked_steps":1 },
+  "goals":[ {"id":"G-01","title":"…","status":"active|blocked|done","progress":0.35,"steps_done":7,"steps_total":20} ] }
+```
+
 ## reports (nightly self-audit — unchanged)
 `data/<date>.json` with `scores`, `composite`, `findings`, `proposals`, `modules_run`.
 Surfaced under the **Reports** subsystem; north-star metrics trend across all reports.
@@ -98,8 +140,8 @@ Surfaced under the **Reports** subsystem; north-star metrics trend across all re
 
 ### Phase roadmap (nav reflects this)
 - **Phase 0 · Kernel** — Mission Control, Runtime, Agents, Diagnostics ✅ (live)
-- **Phase 1 · Observability** — Event Stream, Timeline, Logs, Alerts, Health
-- **Phase 2 · Cognition** — Memory, Reasoning, Reflection, Planning
+- **Phase 1 · Observability** — Event Stream, Timeline, Logs, Alerts, Health ✅ (live)
+- **Phase 2 · Cognition** — Memory, Reasoning, Reflection, Planning ✅ (live)
 - **Phase 3 · Execution** — Scheduler, Queues, Workloads, Automation
 - **Phase 4 · Intelligence** — Knowledge Graph, Relationships, Semantic Search, Context Explorer
 - **Phase 5 · Evolution** — Trend Analysis, Learning Metrics, Improvement Engine, Autonomous Optimization

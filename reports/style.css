@@ -303,6 +303,65 @@ a { color: inherit; text-decoration: none; }
 .hc-status.warn { color: var(--warn); background: rgba(199,119,0,.08); }
 .hc-status.dim { color: var(--ink-3); background: var(--inset); }
 
+/* ---------- COGNITION (Phase 2) ---------- */
+/* capacity bar */
+.cap { height: 6px; background: var(--track); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.cap-fill { height: 100%; background: var(--bar); border-radius: 999px; }
+.cap-fill.ok { background: var(--ok); } .cap-fill.warn { background: var(--warn); } .cap-fill.hot { background: var(--warn); }
+
+/* stat grid */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+.stat { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 5px; border-bottom: 1px dotted var(--line); }
+.stat-k { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-v { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); }
+.stat-v.warn { color: var(--warn); }
+
+/* cognition mini-cards (memory tiers) */
+.cog-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.statbox { border: 1px solid var(--line); border-radius: 6px; padding: 14px; background: var(--panel-2); }
+.sb-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.sb-v { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--ink); margin-top: 6px; }
+.sb-u { font-family: var(--sans); font-size: 11px; font-weight: 400; color: var(--ink-3); margin-left: 4px; }
+.sb-sub { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+
+/* memory ops */
+.op-row { display: grid; grid-template-columns: 54px 82px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+.op-row:last-child { border-bottom: none; }
+.op-t { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.op-badge { font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: var(--ink-2); background: var(--inset); border-radius: 3px; padding: 2px 7px; justify-self: start; }
+.op-badge.warn { color: var(--warn); background: rgba(199,119,0,.1); }
+.op-d { color: var(--ink-2); }
+
+/* reflection */
+.calib-row { display: grid; grid-template-columns: 150px 1fr 48px; gap: 12px; align-items: center; margin-bottom: 10px; }
+.calib-k { font-size: 11.5px; color: var(--ink-2); }
+.calib-v { font-family: var(--mono); font-size: 12px; text-align: right; }
+.calib .cap { margin-top: 0; }
+.calib-gap { font-size: 11.5px; color: var(--ink-3); margin-top: 6px; }
+.calib-gap b { font-family: var(--mono); color: var(--ink); }
+.refl { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.refl:last-child { border-bottom: none; }
+.refl-h { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+.refl-out { font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; background: var(--inset); color: var(--ink-2); }
+.refl-out.applied { color: var(--ok); background: rgba(30,142,62,.1); }
+.refl-out.rejected { color: var(--crit); background: rgba(217,48,37,.1); }
+.refl-conf { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+.refl-ts { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-left: auto; }
+.refl-insight { font-size: 12.5px; color: var(--ink); }
+.refl-action { font-size: 11.5px; color: var(--ink-2); margin-top: 3px; }
+
+/* planning goals */
+.goal { padding: 11px 0; border-bottom: 1px solid var(--line); }
+.goal:last-child { border-bottom: none; }
+.goal-h { display: flex; gap: 10px; align-items: baseline; margin-bottom: 3px; }
+.goal-status { font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; background: var(--inset); color: var(--ink-2); }
+.goal-status.active { color: var(--ok); background: rgba(30,142,62,.09); }
+.goal-status.blocked { color: var(--crit); background: rgba(217,48,37,.09); }
+.goal-status.done { color: var(--ink-3); }
+.goal-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+.goal-id { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-left: auto; }
+.goal-f { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-top: 5px; }
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 900px) {
     .os { grid-template-columns: 1fr; }
@@ -317,4 +376,7 @@ a { color: inherit; text-decoration: none; }
     .log { grid-template-columns: 48px 46px 1fr; }
     .log-sub { display: none; }
     .tl-node { grid-template-columns: 68px 20px 1fr; }
+    .cog-cards { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .calib-row { grid-template-columns: 110px 1fr 40px; }
 }

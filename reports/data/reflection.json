@@ -1,0 +1,38 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "calibration": {
+    "predicted": 0.82,
+    "actual": 0.76,
+    "samples": 38
+  },
+  "entries": [
+    {
+      "ts": "2026-07-07T03:00:00-06:00",
+      "insight": "Over-scaffolds first blueprint drafts before feedback.",
+      "action": "Reduce initial section count to 20; expand after review.",
+      "outcome": "applied",
+      "confidence": 0.8
+    },
+    {
+      "ts": "2026-07-07T03:00:00-06:00",
+      "insight": "User prefers direct file edits over code blocks.",
+      "action": "Default to Write tool for edits.",
+      "outcome": "pending",
+      "confidence": 0.9
+    },
+    {
+      "ts": "2026-07-06T03:00:00-06:00",
+      "insight": "Memory recall weak at session start; re-reads MEMORY.md.",
+      "action": "Pre-load top-5 memory files on boot.",
+      "outcome": "pending",
+      "confidence": 0.7
+    },
+    {
+      "ts": "2026-07-05T03:00:00-06:00",
+      "insight": "web_search + memory_get combo causes latency spikes.",
+      "action": "Batch searches in one call.",
+      "outcome": "applied",
+      "confidence": 0.75
+    }
+  ]
+}

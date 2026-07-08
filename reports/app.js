@@ -2,7 +2,7 @@
    Runtime state (data/*.json) is the source of truth. Reports are one output. */
 
 const EXPECTED_PIN = '000000';
-var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, reports: [] };
+var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, memory: null, reasoning: null, reflection: null, planning: null, reports: [] };
 let hbTimer = null, vitals = null, currentRoute = 'mission';
 
 /* ============================ helpers ============================ */
@@ -67,13 +67,15 @@ function lineChart(series, opt) {
 async function getJSON(path) { try { const r = await fetch(path); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 
 async function loadAll() {
-    const [system, runtime, agents, diagnostics, events, logs, heartbeat, manifest] = await Promise.all([
+    const [system, runtime, agents, diagnostics, events, logs, heartbeat, memory, reasoning, reflection, planning, manifest] = await Promise.all([
         getJSON('./data/system.json'), getJSON('./data/runtime.json'), getJSON('./data/agents.json'),
         getJSON('./data/diagnostics.json'), getJSON('./data/events.json'), getJSON('./data/logs.json'),
-        getJSON('./data/heartbeat.json'), getJSON('./data/manifest.json')
+        getJSON('./data/heartbeat.json'), getJSON('./data/memory.json'), getJSON('./data/reasoning.json'),
+        getJSON('./data/reflection.json'), getJSON('./data/planning.json'), getJSON('./data/manifest.json')
     ]);
     DATA.system = system; DATA.runtime = runtime; DATA.agents = agents;
     DATA.diagnostics = diagnostics; DATA.events = events; DATA.logs = logs; DATA.heartbeat = heartbeat;
+    DATA.memory = memory; DATA.reasoning = reasoning; DATA.reflection = reflection; DATA.planning = planning;
     const files = Array.isArray(manifest) ? manifest : (manifest && manifest.reports) || [];
     const reports = [];
     for (const f of files) { const r = await getJSON('./data/' + f); if (r) reports.push(r); }
@@ -162,10 +164,10 @@ const SUBSYSTEMS = [
     { id: 'alerts',       label: 'Alerts',       phase: 'Phase 1 · Observability', on: true, render: renderAlerts,      health: alertsHealth },
     { id: 'health',       label: 'Health',       phase: 'Phase 1 · Observability', on: true, render: renderHealth,      health: healthHealth },
 
-    { id: 'memory',     label: 'Memory',     phase: 'Phase 2 · Cognition' },
-    { id: 'reasoning',  label: 'Reasoning',  phase: 'Phase 2 · Cognition' },
-    { id: 'reflection', label: 'Reflection', phase: 'Phase 2 · Cognition' },
-    { id: 'planning',   label: 'Planning',   phase: 'Phase 2 · Cognition' },
+    { id: 'memory',     label: 'Memory',     phase: 'Phase 2 · Cognition', on: true, render: renderMemory,     health: memoryHealth },
+    { id: 'reasoning',  label: 'Reasoning',  phase: 'Phase 2 · Cognition', on: true, render: renderReasoning,  health: reasoningHealth },
+    { id: 'reflection', label: 'Reflection', phase: 'Phase 2 · Cognition', on: true, render: renderReflection, health: reflectionHealth },
+    { id: 'planning',   label: 'Planning',   phase: 'Phase 2 · Cognition', on: true, render: renderPlanning,   health: planningHealth },
 
     { id: 'scheduler',  label: 'Scheduler',  phase: 'Phase 3 · Execution' },
     { id: 'queues',     label: 'Queues',     phase: 'Phase 3 · Execution' },
@@ -451,6 +453,101 @@ function renderHealth() {
         body += panel(g, `<div class="hc-list">${items}</div>`);
     }
     return viewHeader('Health', `${pass}/${ch.length} checks passing${bad ? ' · <span class="bad">' + bad + ' down</span>' : ''}`, statusPill(healthHealth())) + `<div class="mc-grid">${body}</div>`;
+}
+
+/* ============================ Phase 2 · Cognition ============================ */
+function pct(n) { return (n == null || isNaN(n)) ? '—' : Math.round(n * 100) + '%'; }
+function bar(p, cls) { p = Math.max(0, Math.min(100, p || 0)); return `<div class="cap"><div class="cap-fill ${cls || ''}" style="width:${p}%"></div></div>`; }
+function stat(label, val, cls) { return `<div class="stat"><span class="stat-k">${esc(label)}</span><span class="stat-v ${cls || ''}">${val == null ? '—' : val}</span></div>`; }
+
+/* --- Memory --- */
+function memoryHealth() {
+    if (!DATA.memory) return { status: 'dim', detail: 'no data' };
+    const m = DATA.memory.metrics || {};
+    return { status: m.conflicts > 0 ? 'warn' : 'ok', detail: (m.entries || 0) + ' entries · recall ' + pct(m.recall_hit_rate) };
+}
+function renderMemory() {
+    if (!DATA.memory) return viewHeader('Memory') + '<div class="muted pad">No memory data.</div>';
+    const M = DATA.memory, t = M.tiers || {}, m = M.metrics || {};
+    const tiers = `<div class="cog-cards">
+        <div class="statbox"><div class="sb-k">${esc((t.working || {}).label || 'Working')}</div><div class="sb-v">${(t.working || {}).used || 0}<span class="sb-u">% ctx</span></div>${bar((t.working || {}).used || 0, ((t.working || {}).used >= 85) ? 'hot' : '')}</div>
+        <div class="statbox"><div class="sb-k">${esc((t.long_term || {}).label || 'Long-Term')}</div><div class="sb-v">${(t.long_term || {}).entries || 0}<span class="sb-u">entries</span></div><div class="sb-sub">${fmt1((t.long_term || {}).size_mb)} MB</div></div>
+        <div class="statbox"><div class="sb-k">${esc((t.semantic || {}).label || 'Semantic')}</div><div class="sb-v">${(t.semantic || {}).nodes || 0}<span class="sb-u">nodes</span></div><div class="sb-sub">${(t.semantic || {}).edges || 0} edges</div></div>
+    </div>`;
+    const metrics = `<div class="stat-grid">
+        ${stat('Entries', m.entries)}${stat('Size', fmt1(m.size_mb) + ' MB')}
+        ${stat('Dedup ratio', pct(m.dedup_ratio))}${stat('Compression', fmt1(m.compression_ratio) + '×')}
+        ${stat('Conflicts', m.conflicts, m.conflicts > 0 ? 'warn' : '')}${stat('Orphans', m.orphans)}
+        ${stat('Recall hit-rate', pct(m.recall_hit_rate))}
+    </div>`;
+    const recall = M.recall_series ? `<div class="tcard"><div class="tcard-h"><span class="tcard-k">Recall Hit-Rate</span><span class="tcard-v">${pct(m.recall_hit_rate)}</span></div>${lineChart(M.recall_series.map(x => x * 100), { w: 320, h: 58 })}</div>` : '<div class="muted">—</div>';
+    const recent = (M.recent || []).map(r => `<div class="op-row"><span class="op-t">${clockTime(r.ts)}</span><span class="op-badge ${r.op === 'conflict' ? 'warn' : ''}">${esc(r.op)}</span><span class="op-d">${esc(r.detail)}</span></div>`).join('') || '<div class="muted">—</div>';
+    return viewHeader('Memory', 'Memory subsystem · tiers, integrity, recall', statusPill(memoryHealth()))
+        + `<div class="mc-grid">` + panel('Memory Tiers', tiers, 'span2') + panel('Integrity & Metrics', metrics) + panel('Recall Trend', recall) + panel('Recent Memory Ops', recent, 'span2') + `</div>`;
+}
+
+/* --- Reasoning --- */
+function reasoningHealth() {
+    if (!DATA.reasoning) return { status: 'dim', detail: 'no data' };
+    const m = DATA.reasoning.metrics || {};
+    const conf = m.confidence ? m.confidence.now : 100, succ = m.problem_solving ? m.problem_solving.now : 100;
+    return { status: (conf < 60 || succ < 60) ? 'warn' : 'ok', detail: 'confidence ' + conf + '%' };
+}
+function rMetricVal(m) { if (m.unit === '%') return m.now + '%'; if (m.unit === 'ms') return m.now + 'ms'; return fmt1(m.now) + (m.unit ? ' ' + m.unit : ''); }
+function renderReasoning() {
+    if (!DATA.reasoning) return viewHeader('Reasoning') + '<div class="muted pad">No reasoning data.</div>';
+    const R = DATA.reasoning, order = ['confidence', 'problem_solving', 'decision_latency', 'chain_length', 'planning_depth'];
+    const cards = order.filter(k => R.metrics[k]).map(k => {
+        const m = R.metrics[k], lo = Math.min.apply(null, m.series), hi = Math.max.apply(null, m.series);
+        return `<div class="tcard"><div class="tcard-h"><span class="tcard-k">${esc(m.label)}</span><span class="tcard-v">${rMetricVal(m)}</span></div>${lineChart(m.series, { w: 320, h: 58 })}<div class="tcard-f">min ${fmt1(lo)} · max ${fmt1(hi)}</div></div>`;
+    }).join('');
+    const c = R.counters || {};
+    const counters = `<div class="stat-grid">
+        ${stat('Decisions', c.decisions)}${stat('Clarifications', c.clarifications, c.clarifications >= 6 ? 'warn' : '')}
+        ${stat('Self-corrections', c.self_corrections)}${stat('Errors recovered', c.errors_recovered)}
+        ${stat('Hallucinations prevented', c.hallucinations_prevented)}
+    </div>`;
+    return viewHeader('Reasoning', 'Cognitive performance metrics', statusPill(reasoningHealth()))
+        + `<div class="tgrid">${cards}</div><div style="margin-top:12px">${panel('Cognition Counters', counters)}</div>`;
+}
+
+/* --- Reflection --- */
+function reflectionHealth() {
+    if (!DATA.reflection) return { status: 'dim', detail: 'no data' };
+    const c = DATA.reflection.calibration || {}, gap = Math.abs((c.predicted || 0) - (c.actual || 0));
+    const pend = (DATA.reflection.entries || []).filter(e => e.outcome === 'pending').length;
+    return { status: gap > 0.15 ? 'warn' : 'ok', detail: (DATA.reflection.entries || []).length + ' insights · ' + pend + ' pending' };
+}
+function renderReflection() {
+    if (!DATA.reflection) return viewHeader('Reflection') + '<div class="muted pad">No reflection data.</div>';
+    const R = DATA.reflection, cal = R.calibration || {}, gap = (cal.predicted || 0) - (cal.actual || 0);
+    const calib = `<div class="calib">
+        <div class="calib-row"><span class="calib-k">Predicted confidence</span>${bar((cal.predicted || 0) * 100, '')}<span class="calib-v">${pct(cal.predicted)}</span></div>
+        <div class="calib-row"><span class="calib-k">Actual outcome</span>${bar((cal.actual || 0) * 100, 'ok')}<span class="calib-v">${pct(cal.actual)}</span></div>
+        <div class="calib-gap">Calibration gap <b class="${Math.abs(gap) > 0.15 ? 'warn' : ''}">${gap >= 0 ? '+' : ''}${Math.round(gap * 100)}%</b> · ${cal.samples || 0} samples ${gap > 0 ? '(overconfident)' : gap < 0 ? '(underconfident)' : ''}</div>
+    </div>`;
+    const entries = (R.entries || []).map(e => `<div class="refl"><div class="refl-h"><span class="refl-out ${esc(e.outcome)}">${esc(e.outcome)}</span><span class="refl-conf">conf ${pct(e.confidence)}</span><span class="refl-ts">${relTime(e.ts)}</span></div><div class="refl-insight">${esc(e.insight)}</div><div class="refl-action">↳ ${esc(e.action)}</div></div>`).join('') || '<div class="muted">—</div>';
+    return viewHeader('Reflection', 'Metacognition · self-assessment & calibration', statusPill(reflectionHealth()))
+        + `<div class="mc-grid">` + panel('Confidence Calibration', calib, 'span2') + panel('Reflection Log', entries, 'span2') + `</div>`;
+}
+
+/* --- Planning --- */
+function planningHealth() {
+    if (!DATA.planning) return { status: 'dim', detail: 'no data' };
+    const m = DATA.planning.metrics || {};
+    return { status: m.blocked_steps > 0 ? 'warn' : 'ok', detail: (m.active_plans || 0) + ' active · ' + (m.blocked_steps || 0) + ' blocked' };
+}
+function renderPlanning() {
+    if (!DATA.planning) return viewHeader('Planning') + '<div class="muted pad">No planning data.</div>';
+    const P = DATA.planning, m = P.metrics || {};
+    const goals = (P.goals || []).map(g => `<div class="goal ${esc(g.status)}"><div class="goal-h"><span class="goal-status ${esc(g.status)}">${esc(g.status)}</span><span class="goal-title">${esc(g.title)}</span><span class="goal-id">${esc(g.id)}</span></div>${bar((g.progress || 0) * 100, g.status === 'blocked' ? 'warn' : (g.status === 'done' ? 'ok' : ''))}<div class="goal-f">${g.steps_done}/${g.steps_total} steps · ${Math.round((g.progress || 0) * 100)}%</div></div>`).join('') || '<div class="muted">—</div>';
+    const metrics = `<div class="stat-grid">
+        ${stat('Active plans', m.active_plans)}${stat('Avg depth', fmt1(m.avg_depth))}
+        ${stat('Avg branching', fmt1(m.avg_branching))}${stat('Step success', pct(m.step_success_rate))}
+        ${stat('Replans', m.replans)}${stat('Blocked steps', m.blocked_steps, m.blocked_steps > 0 ? 'warn' : '')}
+    </div>`;
+    return viewHeader('Planning', 'Goal decomposition & execution planning', statusPill(planningHealth()))
+        + `<div class="mc-grid">` + panel('Goals', goals, 'span2') + panel('Planning Metrics', metrics, 'span2') + `</div>`;
 }
 
 /* ============================ router ============================ */

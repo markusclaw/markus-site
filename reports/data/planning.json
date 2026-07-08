@@ -1,0 +1,45 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "metrics": {
+    "active_plans": 3,
+    "avg_depth": 3.1,
+    "avg_branching": 2.4,
+    "step_success_rate": 0.82,
+    "replans": 2,
+    "blocked_steps": 1
+  },
+  "goals": [
+    {
+      "id": "G-01",
+      "title": "Build MARKUS OS console (Phases 0-5)",
+      "status": "active",
+      "progress": 0.35,
+      "steps_done": 7,
+      "steps_total": 20
+    },
+    {
+      "id": "G-02",
+      "title": "Migrate deployment to Cloudflare Pages",
+      "status": "done",
+      "progress": 1,
+      "steps_done": 4,
+      "steps_total": 4
+    },
+    {
+      "id": "G-03",
+      "title": "Quiniela audit + deploy",
+      "status": "blocked",
+      "progress": 0.5,
+      "steps_done": 3,
+      "steps_total": 6
+    },
+    {
+      "id": "G-04",
+      "title": "Memory warmup at session start",
+      "status": "active",
+      "progress": 0.2,
+      "steps_done": 1,
+      "steps_total": 5
+    }
+  ]
+}
