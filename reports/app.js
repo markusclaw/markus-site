@@ -2,7 +2,7 @@
    Runtime state (data/*.json) is the source of truth. Reports are one output. */
 
 const EXPECTED_PIN = '000000';
-var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, memory: null, reasoning: null, reflection: null, planning: null, scheduler: null, queues: null, workloads: null, automation: null, knowledge: null, context: null, reports: [] };
+var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, memory: null, reasoning: null, reflection: null, planning: null, scheduler: null, queues: null, workloads: null, automation: null, knowledge: null, context: null, evolution: null, reports: [] };
 let hbTimer = null, vitals = null, currentRoute = 'mission';
 
 /* ============================ helpers ============================ */
@@ -69,18 +69,18 @@ async function getJSON(path) { try { const r = await fetch(path); return r.ok ? 
 async function loadAll() {
     const j = getJSON;
     const [system, runtime, agents, diagnostics, events, logs, heartbeat, memory, reasoning, reflection, planning,
-        scheduler, queues, workloads, automation, knowledge, context, manifest] = await Promise.all([
+        scheduler, queues, workloads, automation, knowledge, context, evolution, manifest] = await Promise.all([
         j('./data/system.json'), j('./data/runtime.json'), j('./data/agents.json'), j('./data/diagnostics.json'),
         j('./data/events.json'), j('./data/logs.json'), j('./data/heartbeat.json'), j('./data/memory.json'),
         j('./data/reasoning.json'), j('./data/reflection.json'), j('./data/planning.json'), j('./data/scheduler.json'),
         j('./data/queues.json'), j('./data/workloads.json'), j('./data/automation.json'), j('./data/knowledge.json'),
-        j('./data/context.json'), j('./data/manifest.json')
+        j('./data/context.json'), j('./data/evolution.json'), j('./data/manifest.json')
     ]);
     DATA.system = system; DATA.runtime = runtime; DATA.agents = agents;
     DATA.diagnostics = diagnostics; DATA.events = events; DATA.logs = logs; DATA.heartbeat = heartbeat;
     DATA.memory = memory; DATA.reasoning = reasoning; DATA.reflection = reflection; DATA.planning = planning;
     DATA.scheduler = scheduler; DATA.queues = queues; DATA.workloads = workloads; DATA.automation = automation;
-    DATA.knowledge = knowledge; DATA.context = context;
+    DATA.knowledge = knowledge; DATA.context = context; DATA.evolution = evolution;
     const files = Array.isArray(manifest) ? manifest : (manifest && manifest.reports) || [];
     const reports = [];
     for (const f of files) { const r = await getJSON('./data/' + f); if (r) reports.push(r); }
@@ -184,10 +184,10 @@ const SUBSYSTEMS = [
     { id: 'semantic-search',  label: 'Semantic Search',  phase: 'Phase 4 · Intelligence', on: true, render: renderSemanticSearch, health: semanticHealth },
     { id: 'context-explorer', label: 'Context Explorer', phase: 'Phase 4 · Intelligence', on: true, render: renderContext,       health: contextHealth },
 
-    { id: 'trend-analysis',          label: 'Trend Analysis',          phase: 'Phase 5 · Evolution' },
-    { id: 'learning-metrics',        label: 'Learning Metrics',        phase: 'Phase 5 · Evolution' },
-    { id: 'improvement-engine',      label: 'Improvement Engine',      phase: 'Phase 5 · Evolution' },
-    { id: 'autonomous-optimization', label: 'Autonomous Optimization', phase: 'Phase 5 · Evolution' },
+    { id: 'trend-analysis',          label: 'Trend Analysis',          phase: 'Phase 5 · Evolution', on: true, render: renderTrends,       health: evolutionHealth },
+    { id: 'learning-metrics',        label: 'Learning Metrics',        phase: 'Phase 5 · Evolution', on: true, render: renderLearning,     health: learningHealth },
+    { id: 'improvement-engine',      label: 'Improvement Engine',      phase: 'Phase 5 · Evolution', on: true, render: renderImprovement,  health: improvementHealth },
+    { id: 'autonomous-optimization', label: 'Autonomous Optimization', phase: 'Phase 5 · Evolution', on: true, render: renderOptimization, health: optimizationHealth },
 
     { id: 'reports', label: 'Reports', phase: 'Outputs', on: true, render: renderReports }
 ];
@@ -716,6 +716,85 @@ function renderContext() {
     const wbar = `<div class="ctx-window"><div class="ctx-win-h"><span>Context Window</span><b>${fmtNum(w.used_tokens)} / ${fmtNum(w.max_tokens)} · ${w.pct}%</b></div>${bar(w.pct, w.pct >= 85 ? 'warn' : '')}</div>`;
     return viewHeader('Context Explorer', 'What is loaded into working context', statusPill(contextHealth()))
         + `<div class="mc-grid">` + panel('Window Utilization', wbar, 'span2') + panel('Loaded Slots (' + slotsArr.length + ')', slots, 'span2') + `</div>`;
+}
+
+/* ============================ Phase 5 · Evolution ============================ */
+function trendDir(t) {
+    const s = t.series, a = s[0], b = s[s.length - 1], delta = b - a;
+    return { delta, improving: t.goal === 'down' ? delta < 0 : delta > 0 };
+}
+function evolutionHealth() {
+    if (!DATA.evolution) return { status: 'dim', detail: 'no data' };
+    const arr = Object.values(DATA.evolution.trends || {}), imp = arr.filter(x => trendDir(x).improving).length;
+    return { status: 'ok', detail: imp + '/' + arr.length + ' trends improving' };
+}
+function renderTrends() {
+    if (!DATA.evolution) return viewHeader('Trend Analysis') + '<div class="muted pad">No data.</div>';
+    const t = DATA.evolution.trends || {};
+    const cards = Object.keys(t).map(k => {
+        const m = t[k], dir = trendDir(m), now = m.series[m.series.length - 1];
+        const pctChg = m.series[0] ? (dir.delta / Math.abs(m.series[0]) * 100) : 0;
+        const val = m.unit === '%' ? now + '%' : (m.unit === '/10' ? fmt1(now) + '/10' : (m.unit ? fmt1(now) + ' ' + m.unit : fmt1(now)));
+        const state = dir.improving ? 'ok' : 'warn';
+        return `<div class="tcard ${state}"><div class="tcard-h"><span class="tcard-k">${esc(m.label)}</span><span class="tcard-v">${val}</span></div>${lineChart(m.series, { w: 320, h: 56, state })}<div class="tcard-f"><span class="tr ${dir.improving ? 'up' : 'down'}">${dir.improving ? '▲' : '▼'} ${fmt1(Math.abs(pctChg))}%</span> over ${DATA.evolution.window_days || 14}d · goal ${esc(m.goal)}</div></div>`;
+    }).join('');
+    return viewHeader('Trend Analysis', 'Long-run metric trajectories', statusPill(evolutionHealth())) + `<div class="tgrid">${cards}</div>`;
+}
+
+function learningHealth() {
+    if (!DATA.evolution || !DATA.evolution.learning) return { status: 'dim', detail: 'no data' };
+    const l = DATA.evolution.learning;
+    return { status: l.regressions > 0 ? 'warn' : 'ok', detail: (l.lessons_applied || 0) + ' lessons applied' };
+}
+function renderLearning() {
+    if (!DATA.evolution || !DATA.evolution.learning) return viewHeader('Learning Metrics') + '<div class="muted pad">No data.</div>';
+    const l = DATA.evolution.learning;
+    const big = `<div class="cog-cards">
+        <div class="statbox"><div class="sb-k">Self-Improvement Rate</div><div class="sb-v">${Math.round((l.self_improvement_rate || 0) * 100)}<span class="sb-u">% / wk</span></div></div>
+        <div class="statbox"><div class="sb-k">Reasoning Δ (30d)</div><div class="sb-v">+${Math.round((l.reasoning_improvement_30d || 0) * 100)}<span class="sb-u">%</span></div></div>
+        <div class="statbox"><div class="sb-k">Skills Acquired</div><div class="sb-v">${l.skills_acquired || 0}<span class="sb-u">skills</span></div></div>
+    </div>`;
+    const grid = `<div class="stat-grid">
+        ${stat('Prompts optimized', l.prompts_optimized)}${stat('Lessons applied', l.lessons_applied)}
+        ${stat('Lessons pending', l.lessons_pending)}${stat('Skills acquired', l.skills_acquired)}
+        ${stat('Regressions', l.regressions, l.regressions > 0 ? 'warn' : '')}
+    </div>`;
+    const miles = (DATA.evolution.milestones || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map(m => `<div class="mile"><span class="mile-dot ${esc(m.kind)}"></span><span class="mile-title">${esc(m.title)}</span><span class="mile-date">${relTime(m.date)}</span></div>`).join('') || '<div class="muted">—</div>';
+    return viewHeader('Learning Metrics', 'How fast Markus is getting better', statusPill(learningHealth()))
+        + `<div class="mc-grid">` + panel('Headline', big, 'span2') + panel('Learning Counters', grid) + panel('Milestones', miles) + `</div>`;
+}
+
+function improvementHealth() {
+    if (!DATA.evolution || !DATA.evolution.improvements) return { status: 'dim', detail: 'no data' };
+    const imp = DATA.evolution.improvements, applied = imp.filter(x => ['applied', 'measured'].includes(x.status)).length;
+    return { status: 'ok', detail: applied + '/' + imp.length + ' applied' };
+}
+function renderImprovement() {
+    if (!DATA.evolution || !DATA.evolution.improvements) return viewHeader('Improvement Engine') + '<div class="muted pad">No data.</div>';
+    const imp = DATA.evolution.improvements, stages = ['proposed', 'approved', 'applied', 'measured'];
+    const counts = {}; imp.forEach(x => counts[x.status] = (counts[x.status] || 0) + 1);
+    const funnel = stages.map(s => `<div class="funnel-step"><div class="funnel-n">${counts[s] || 0}</div><div class="funnel-l">${s}</div></div>`).join('<div class="funnel-arrow">→</div>');
+    const order = { measured: 0, applied: 1, approved: 2, proposed: 3 };
+    const rows = imp.slice().sort((a, b) => (order[a.status] == null ? 9 : order[a.status]) - (order[b.status] == null ? 9 : order[b.status])).map(x => `<div class="imp"><div class="imp-l"><span class="imp-stage ${esc(x.status)}">${esc(x.status)}</span><span class="imp-title">${esc(x.title)}</span><span class="imp-id">${esc(x.id)}</span></div><div class="imp-impact">${x.impact && x.impact !== '—' ? '<b>' + esc(x.impact) + '</b>' : '<span class="muted">pending</span>'}<span class="imp-date">${x.date ? relTime(x.date) : ''}</span></div></div>`).join('');
+    return viewHeader('Improvement Engine', 'Self-enhancement pipeline', statusPill(improvementHealth()))
+        + `<div class="funnel">${funnel}</div><div class="imp-list">${rows}</div>`;
+}
+
+function optimizationHealth() {
+    if (!DATA.evolution || !DATA.evolution.optimizations) return { status: 'dim', detail: 'no data' };
+    const o = DATA.evolution.optimizations, auto = o.filter(x => x.auto).length;
+    return { status: 'ok', detail: auto + ' auto-applied' };
+}
+function renderOptimization() {
+    if (!DATA.evolution || !DATA.evolution.optimizations) return viewHeader('Autonomous Optimization') + '<div class="muted pad">No data.</div>';
+    const o = DATA.evolution.optimizations.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const rows = o.map(x => {
+        const lowerBetter = /latency|cost|window/.test(x.metric);
+        const better = lowerBetter ? x.after < x.before : x.after > x.before;
+        return `<div class="opt"><div class="opt-l"><span class="opt-auto${x.auto ? '' : ' man'}">${x.auto ? 'AUTO' : 'MANUAL'}</span><div><div class="opt-action">${esc(x.action)}</div><div class="opt-metric">${esc(x.metric)}</div></div></div><div class="opt-ba"><span class="opt-before">${fmt1(x.before)}${esc(x.unit || '')}</span><span class="opt-arrow">→</span><span class="opt-after ${better ? 'good' : 'bad'}">${fmt1(x.after)}${esc(x.unit || '')}</span></div><div class="opt-date">${relTime(x.ts)}</div></div>`;
+    }).join('');
+    return viewHeader('Autonomous Optimization', 'Self-tuning actions (before → after)', statusPill(optimizationHealth()))
+        + `<div class="opt-head"><span>Action</span><span>Before → After</span><span>When</span></div><div class="opt-list">${rows}</div>`;
 }
 
 /* ============================ router ============================ */

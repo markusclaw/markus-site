@@ -28,6 +28,7 @@ data/
   automation.json     ← automation rules & triggers (Automation)
   knowledge.json      ← entities + edges (Knowledge Graph; Relationships derives)
   context.json        ← context-window slots (Context Explorer)
+  evolution.json      ← trends, learning, improvement pipeline, optimizations (Phase 5)
   <YYYY-MM-DD>.json   ← nightly self-audit reports (existing)
   manifest.json       ← ["2026-07-07.json", …] list of report files
 ```
@@ -160,6 +161,19 @@ Newest-first in the viewer; filterable by level. `error` lines drive the Logs he
 Semantic Search builds a client-side index across knowledge, memory, reflection, planning,
 agents, and diagnostics — no file of its own.
 
+## Phase 5 · Evolution file
+```json
+// evolution.json
+{ "updated":"ISO", "window_days":14,
+  "trends":{ "<metric>":{ "label":"…","unit":"%|/10|ms|…","goal":"up|down","series":[…] } },
+  "learning":{ "prompts_optimized":12,"lessons_applied":18,"lessons_pending":5,
+    "skills_acquired":7,"regressions":1,"self_improvement_rate":0.08,"reasoning_improvement_30d":0.14 },
+  "improvements":[ {"id":"imp-…","title":"…","status":"proposed|approved|applied|measured","impact":"…","date":"ISO"} ],
+  "optimizations":[ {"ts":"ISO","action":"…","metric":"…","before":6.40,"after":4.12,"unit":"$","auto":true} ],
+  "milestones":[ {"date":"ISO","title":"…","kind":"capability|milestone|optimization"} ] }
+```
+`goal` sets whether an up or down trend counts as improving (drives the direction arrows + colors).
+
 ## reports (nightly self-audit — unchanged)
 `data/<date>.json` with `scores`, `composite`, `findings`, `proposals`, `modules_run`.
 Surfaced under the **Reports** subsystem; north-star metrics trend across all reports.
@@ -172,7 +186,9 @@ Surfaced under the **Reports** subsystem; north-star metrics trend across all re
 - **Phase 2 · Cognition** — Memory, Reasoning, Reflection, Planning ✅ (live)
 - **Phase 3 · Execution** — Scheduler, Queues, Workloads, Automation ✅ (live)
 - **Phase 4 · Intelligence** — Knowledge Graph, Relationships, Semantic Search, Context Explorer ✅ (live)
-- **Phase 5 · Evolution** — Trend Analysis, Learning Metrics, Improvement Engine, Autonomous Optimization
+- **Phase 5 · Evolution** — Trend Analysis, Learning Metrics, Improvement Engine, Autonomous Optimization ✅ (live)
+
+**All phases live — MARKUS OS console is feature-complete (25 subsystems).**
 
 Each phase publishes its own `data/<subsystem>.json` following the same shape (a health/status,
 telemetry/series, and a timestamp), so it plugs straight into Mission Control and Diagnostics.
