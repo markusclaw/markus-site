@@ -1,0 +1,4 @@
+# Cloudflare Pages headers
+# The console is a live instrument — never serve stale code or data.
+/reports/*
+  Cache-Control: no-store

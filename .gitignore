@@ -9,3 +9,8 @@ Thumbs.db
 # Logs / temp
 *.log
 node_modules/
+
+# Python
+__pycache__/
+*.pyc
+publisher/_demo_data/
