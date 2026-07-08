@@ -1,7 +1,6 @@
 {
-  "last_pulse": "2026-07-07T20:44:00.000Z",
+  "last_pulse": "2026-07-07T20:24:05-07:00",
   "state": "active",
-  "next_run": "2026-07-08T03:00:00-06:00",
   "alive_window_min": 90,
-  "note": "Updated by Markus on each heartbeat checkpoint."
+  "note": "Published by markus_publisher.py"
 }

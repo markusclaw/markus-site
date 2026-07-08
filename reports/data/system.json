@@ -6,10 +6,10 @@
   "framework": "Claude Agent SDK",
   "version": "markus-2.4.1",
   "kernel": "markus-kernel 0.1",
-  "host": "Mac mini (M2 · 16 GB)",
-  "os": "macOS 15.5",
-  "boot": "2026-07-04T23:44:00-06:00",
-  "uptime_hours": 63.7,
+  "host": "Mac mini (M2 \u00b7 16 GB)",
+  "os": "Darwin 24.1.0",
+  "boot": "2026-04-16T11:08:17-07:00",
+  "uptime_hours": 1977.3,
   "machines": [
     {
       "name": "Mac mini (M2)",

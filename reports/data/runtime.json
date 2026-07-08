@@ -1,16 +1,15 @@
 {
-  "updated": "2026-07-07T20:44:00.000Z",
+  "updated": "2026-07-07T20:24:06-07:00",
   "window_min": 60,
   "sample_interval_s": 90,
   "metrics": {
     "cpu_pct": {
       "label": "CPU",
       "unit": "%",
-      "now": 14,
+      "now": 35.6,
       "warn": 80,
       "crit": 95,
       "series": [
-        15,
         19,
         18,
         18,
@@ -49,17 +48,17 @@
         13,
         8,
         10,
-        7
+        7,
+        35.6
       ]
     },
     "mem_pct": {
       "label": "Memory",
       "unit": "%",
-      "now": 68,
+      "now": 83.5,
       "warn": 85,
       "crit": 95,
       "series": [
-        67,
         66,
         69,
         71,
@@ -98,20 +97,20 @@
         66,
         64,
         62,
-        62
+        62,
+        83.5
       ]
     },
     "disk_pct": {
       "label": "Disk",
       "unit": "%",
-      "now": 98,
+      "now": 95.6,
       "warn": 90,
       "crit": 97,
-      "detail": "4.3 GB free / 245 GB",
+      "detail": "10.7 GB free / 245 GB",
       "series": [
         97,
         97,
-        97,
         98,
         98,
         98,
@@ -148,7 +147,8 @@
         98,
         98,
         98,
-        98
+        98,
+        95.6
       ]
     },
     "context_pct": {
