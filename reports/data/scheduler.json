@@ -1,0 +1,55 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "jobs": [
+    {
+      "id": "job-nightly-audit",
+      "name": "nightly-self-audit",
+      "cron": "0 3 * * *",
+      "next_run": "2026-07-08T09:00:00.000Z",
+      "last_run": "2026-07-07T09:00:00.000Z",
+      "last_status": "success",
+      "avg_duration_s": 47,
+      "enabled": true
+    },
+    {
+      "id": "job-heartbeat",
+      "name": "heartbeat-checkpoint",
+      "cron": "*/15 * * * *",
+      "next_run": "2026-07-07T20:45:00.000Z",
+      "last_run": "2026-07-07T20:38:00.000Z",
+      "last_status": "success",
+      "avg_duration_s": 1,
+      "enabled": true
+    },
+    {
+      "id": "job-memory-cleanup",
+      "name": "memory-cleanup",
+      "cron": "0 3 * * *",
+      "next_run": "2026-07-08T09:00:00.000Z",
+      "last_run": "2026-07-07T09:00:00.000Z",
+      "last_status": "success",
+      "avg_duration_s": 12,
+      "enabled": true
+    },
+    {
+      "id": "job-morning-brief",
+      "name": "morning-briefing",
+      "cron": "0 7 * * *",
+      "next_run": "2026-07-08T13:00:00.000Z",
+      "last_run": null,
+      "last_status": "idle",
+      "avg_duration_s": 0,
+      "enabled": true
+    },
+    {
+      "id": "job-git-backup",
+      "name": "git-backup",
+      "cron": "0 * * * *",
+      "next_run": "2026-07-07T21:00:00.000Z",
+      "last_run": "2026-07-07T20:00:00.000Z",
+      "last_status": "success",
+      "avg_duration_s": 4,
+      "enabled": true
+    }
+  ]
+}

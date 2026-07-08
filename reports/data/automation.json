@@ -1,0 +1,65 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "automations": [
+    {
+      "id": "auto-01",
+      "name": "disk-threshold-alert",
+      "trigger": "threshold",
+      "target": "diagnostics",
+      "enabled": true,
+      "last_fired": "2026-07-07T20:40:00.000Z",
+      "fire_count": 3,
+      "status": "firing"
+    },
+    {
+      "id": "auto-02",
+      "name": "morning-briefing",
+      "trigger": "cron",
+      "target": "whatsapp",
+      "enabled": true,
+      "last_fired": null,
+      "fire_count": 0,
+      "status": "armed"
+    },
+    {
+      "id": "auto-03",
+      "name": "whatsapp-responder",
+      "trigger": "event",
+      "target": "whatsapp",
+      "enabled": true,
+      "last_fired": "2026-07-07T20:32:00.000Z",
+      "fire_count": 47,
+      "status": "armed"
+    },
+    {
+      "id": "auto-04",
+      "name": "nightly-report-push",
+      "trigger": "cron",
+      "target": "git",
+      "enabled": true,
+      "last_fired": "2026-07-07T09:00:00.000Z",
+      "fire_count": 12,
+      "status": "armed"
+    },
+    {
+      "id": "auto-05",
+      "name": "ollama-reconnect",
+      "trigger": "event",
+      "target": "ollama-bridge",
+      "enabled": true,
+      "last_fired": "2026-07-07T20:13:00.000Z",
+      "fire_count": 4,
+      "status": "firing"
+    },
+    {
+      "id": "auto-06",
+      "name": "context-warmup",
+      "trigger": "event",
+      "target": "memory",
+      "enabled": false,
+      "last_fired": null,
+      "fire_count": 0,
+      "status": "disabled"
+    }
+  ]
+}

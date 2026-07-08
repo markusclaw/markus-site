@@ -1,0 +1,37 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "queues": [
+    {
+      "name": "default",
+      "depth": 2,
+      "in_flight": 1,
+      "rate_per_min": 6,
+      "oldest_age_s": 40,
+      "warn": 8
+    },
+    {
+      "name": "memory",
+      "depth": 1,
+      "in_flight": 0,
+      "rate_per_min": 2,
+      "oldest_age_s": 12,
+      "warn": 8
+    },
+    {
+      "name": "research",
+      "depth": 0,
+      "in_flight": 0,
+      "rate_per_min": 0,
+      "oldest_age_s": 0,
+      "warn": 8
+    },
+    {
+      "name": "retry",
+      "depth": 4,
+      "in_flight": 0,
+      "rate_per_min": 1,
+      "oldest_age_s": 5200,
+      "warn": 3
+    }
+  ]
+}

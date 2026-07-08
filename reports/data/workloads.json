@@ -1,0 +1,87 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "workloads": [
+    {
+      "id": "wl-205",
+      "name": "memory-dedup",
+      "kind": "task",
+      "state": "running",
+      "agent": "memory-curator",
+      "started": "2026-07-07T20:42:00.000Z",
+      "duration_s": 120,
+      "restarts": 0,
+      "progress": 0.6
+    },
+    {
+      "id": "wl-206",
+      "name": "proposal-ranking",
+      "kind": "task",
+      "state": "running",
+      "agent": "improvement-engine",
+      "started": "2026-07-07T20:40:00.000Z",
+      "duration_s": 240,
+      "restarts": 0,
+      "progress": 0.3
+    },
+    {
+      "id": "wl-207",
+      "name": "whatsapp-listener",
+      "kind": "daemon",
+      "state": "running",
+      "agent": "whatsapp-bridge",
+      "started": "2026-07-07T09:00:00.000Z",
+      "duration_s": 42240,
+      "restarts": 0
+    },
+    {
+      "id": "wl-203",
+      "name": "ollama-reconnect",
+      "kind": "daemon",
+      "state": "retrying",
+      "agent": "ollama-bridge",
+      "started": "2026-07-07T19:18:00.000Z",
+      "duration_s": 5160,
+      "restarts": 4
+    },
+    {
+      "id": "wl-204",
+      "name": "quiniela-deploy",
+      "kind": "task",
+      "state": "blocked",
+      "agent": "code-reviewer",
+      "started": "2026-07-07T17:44:00.000Z",
+      "duration_s": 0,
+      "restarts": 0
+    },
+    {
+      "id": "wl-208",
+      "name": "research-fetch",
+      "kind": "task",
+      "state": "queued",
+      "agent": "research-agent",
+      "started": null,
+      "duration_s": 0,
+      "restarts": 0
+    },
+    {
+      "id": "wl-201",
+      "name": "report-renderer-refactor",
+      "kind": "task",
+      "state": "completed",
+      "agent": "improvement-engine",
+      "started": "2026-07-07T20:10:00.000Z",
+      "duration_s": 812,
+      "restarts": 0
+    },
+    {
+      "id": "wl-202",
+      "name": "nightly-audit",
+      "kind": "job",
+      "state": "completed",
+      "agent": "scheduler",
+      "started": "2026-07-07T09:00:00.000Z",
+      "duration_s": 47,
+      "restarts": 0
+    }
+  ]
+}

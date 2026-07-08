@@ -1,0 +1,64 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "window": {
+    "used_tokens": 84000,
+    "max_tokens": 200000,
+    "pct": 42
+  },
+  "slots": [
+    {
+      "kind": "system",
+      "label": "System prompt / SOUL.md",
+      "tokens": 12000,
+      "pinned": true
+    },
+    {
+      "kind": "memory",
+      "label": "MEMORY.md (core)",
+      "tokens": 9200,
+      "pinned": true
+    },
+    {
+      "kind": "memory",
+      "label": "BLUEPRINT_STANDARD.md",
+      "tokens": 4100,
+      "pinned": false
+    },
+    {
+      "kind": "memory",
+      "label": "Naming conventions",
+      "tokens": 2600,
+      "pinned": false
+    },
+    {
+      "kind": "goal",
+      "label": "Goal: Build MARKUS OS console",
+      "tokens": 5100,
+      "pinned": false
+    },
+    {
+      "kind": "conversation",
+      "label": "Active session (Greg)",
+      "tokens": 38000,
+      "pinned": false
+    },
+    {
+      "kind": "tool",
+      "label": "Agent state snapshot",
+      "tokens": 4200,
+      "pinned": false
+    },
+    {
+      "kind": "tool",
+      "label": "Runtime telemetry",
+      "tokens": 2100,
+      "pinned": false
+    },
+    {
+      "kind": "memory",
+      "label": "Recent decisions log",
+      "tokens": 6700,
+      "pinned": false
+    }
+  ]
+}

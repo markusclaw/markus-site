@@ -1,0 +1,171 @@
+{
+  "updated": "2026-07-07T20:44:00.000Z",
+  "nodes": [
+    {
+      "id": "greg",
+      "label": "Greg",
+      "type": "person",
+      "weight": 9
+    },
+    {
+      "id": "markus",
+      "label": "Markus Orus",
+      "type": "system",
+      "weight": 10
+    },
+    {
+      "id": "dms",
+      "label": "Dark Matter Systems",
+      "type": "company",
+      "weight": 8
+    },
+    {
+      "id": "markus-os",
+      "label": "MARKUS OS",
+      "type": "project",
+      "weight": 8
+    },
+    {
+      "id": "ravnpro",
+      "label": "RavnPro",
+      "type": "project",
+      "weight": 6
+    },
+    {
+      "id": "blackstar",
+      "label": "BLACKSTAR Engine",
+      "type": "project",
+      "weight": 5
+    },
+    {
+      "id": "quiniela",
+      "label": "Quiniela",
+      "type": "project",
+      "weight": 4
+    },
+    {
+      "id": "papryka",
+      "label": "Papryka",
+      "type": "project",
+      "weight": 4
+    },
+    {
+      "id": "singularity",
+      "label": "Singularity",
+      "type": "idea",
+      "weight": 6
+    },
+    {
+      "id": "self-enhance",
+      "label": "Self-Enhancement",
+      "type": "idea",
+      "weight": 5
+    },
+    {
+      "id": "naming",
+      "label": "Naming Conventions",
+      "type": "idea",
+      "weight": 4
+    },
+    {
+      "id": "macmini",
+      "label": "Mac mini (M2)",
+      "type": "machine",
+      "weight": 5
+    },
+    {
+      "id": "gamingpc",
+      "label": "Gaming PC",
+      "type": "machine",
+      "weight": 3
+    },
+    {
+      "id": "whatsapp",
+      "label": "WhatsApp",
+      "type": "interface",
+      "weight": 3
+    }
+  ],
+  "edges": [
+    {
+      "source": "greg",
+      "target": "dms",
+      "rel": "owns"
+    },
+    {
+      "source": "greg",
+      "target": "markus",
+      "rel": "works_with"
+    },
+    {
+      "source": "dms",
+      "target": "markus-os",
+      "rel": "owns"
+    },
+    {
+      "source": "markus",
+      "target": "markus-os",
+      "rel": "builds"
+    },
+    {
+      "source": "ravnpro",
+      "target": "dms",
+      "rel": "part_of"
+    },
+    {
+      "source": "blackstar",
+      "target": "ravnpro",
+      "rel": "plugs_into"
+    },
+    {
+      "source": "quiniela",
+      "target": "dms",
+      "rel": "project_of"
+    },
+    {
+      "source": "papryka",
+      "target": "dms",
+      "rel": "project_of"
+    },
+    {
+      "source": "markus",
+      "target": "singularity",
+      "rel": "pursues"
+    },
+    {
+      "source": "markus",
+      "target": "self-enhance",
+      "rel": "practices"
+    },
+    {
+      "source": "markus",
+      "target": "naming",
+      "rel": "defines"
+    },
+    {
+      "source": "markus-os",
+      "target": "macmini",
+      "rel": "runs_on"
+    },
+    {
+      "source": "markus",
+      "target": "gamingpc",
+      "rel": "offloads_to"
+    },
+    {
+      "source": "markus",
+      "target": "whatsapp",
+      "rel": "speaks_via"
+    },
+    {
+      "source": "greg",
+      "target": "quiniela",
+      "rel": "works_on"
+    },
+    {
+      "source": "self-enhance",
+      "target": "singularity",
+      "rel": "toward"
+    }
+  ]
+}

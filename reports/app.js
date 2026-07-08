@@ -2,7 +2,7 @@
    Runtime state (data/*.json) is the source of truth. Reports are one output. */
 
 const EXPECTED_PIN = '000000';
-var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, memory: null, reasoning: null, reflection: null, planning: null, reports: [] };
+var DATA = { system: null, runtime: null, agents: null, diagnostics: null, events: null, logs: null, heartbeat: null, memory: null, reasoning: null, reflection: null, planning: null, scheduler: null, queues: null, workloads: null, automation: null, knowledge: null, context: null, reports: [] };
 let hbTimer = null, vitals = null, currentRoute = 'mission';
 
 /* ============================ helpers ============================ */
@@ -67,15 +67,20 @@ function lineChart(series, opt) {
 async function getJSON(path) { try { const r = await fetch(path); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 
 async function loadAll() {
-    const [system, runtime, agents, diagnostics, events, logs, heartbeat, memory, reasoning, reflection, planning, manifest] = await Promise.all([
-        getJSON('./data/system.json'), getJSON('./data/runtime.json'), getJSON('./data/agents.json'),
-        getJSON('./data/diagnostics.json'), getJSON('./data/events.json'), getJSON('./data/logs.json'),
-        getJSON('./data/heartbeat.json'), getJSON('./data/memory.json'), getJSON('./data/reasoning.json'),
-        getJSON('./data/reflection.json'), getJSON('./data/planning.json'), getJSON('./data/manifest.json')
+    const j = getJSON;
+    const [system, runtime, agents, diagnostics, events, logs, heartbeat, memory, reasoning, reflection, planning,
+        scheduler, queues, workloads, automation, knowledge, context, manifest] = await Promise.all([
+        j('./data/system.json'), j('./data/runtime.json'), j('./data/agents.json'), j('./data/diagnostics.json'),
+        j('./data/events.json'), j('./data/logs.json'), j('./data/heartbeat.json'), j('./data/memory.json'),
+        j('./data/reasoning.json'), j('./data/reflection.json'), j('./data/planning.json'), j('./data/scheduler.json'),
+        j('./data/queues.json'), j('./data/workloads.json'), j('./data/automation.json'), j('./data/knowledge.json'),
+        j('./data/context.json'), j('./data/manifest.json')
     ]);
     DATA.system = system; DATA.runtime = runtime; DATA.agents = agents;
     DATA.diagnostics = diagnostics; DATA.events = events; DATA.logs = logs; DATA.heartbeat = heartbeat;
     DATA.memory = memory; DATA.reasoning = reasoning; DATA.reflection = reflection; DATA.planning = planning;
+    DATA.scheduler = scheduler; DATA.queues = queues; DATA.workloads = workloads; DATA.automation = automation;
+    DATA.knowledge = knowledge; DATA.context = context;
     const files = Array.isArray(manifest) ? manifest : (manifest && manifest.reports) || [];
     const reports = [];
     for (const f of files) { const r = await getJSON('./data/' + f); if (r) reports.push(r); }
@@ -169,15 +174,15 @@ const SUBSYSTEMS = [
     { id: 'reflection', label: 'Reflection', phase: 'Phase 2 · Cognition', on: true, render: renderReflection, health: reflectionHealth },
     { id: 'planning',   label: 'Planning',   phase: 'Phase 2 · Cognition', on: true, render: renderPlanning,   health: planningHealth },
 
-    { id: 'scheduler',  label: 'Scheduler',  phase: 'Phase 3 · Execution' },
-    { id: 'queues',     label: 'Queues',     phase: 'Phase 3 · Execution' },
-    { id: 'workloads',  label: 'Workloads',  phase: 'Phase 3 · Execution' },
-    { id: 'automation', label: 'Automation', phase: 'Phase 3 · Execution' },
+    { id: 'scheduler',  label: 'Scheduler',  phase: 'Phase 3 · Execution', on: true, render: renderScheduler,  health: schedulerHealth },
+    { id: 'queues',     label: 'Queues',     phase: 'Phase 3 · Execution', on: true, render: renderQueues,     health: queuesHealth },
+    { id: 'workloads',  label: 'Workloads',  phase: 'Phase 3 · Execution', on: true, render: renderWorkloads,  health: workloadsHealth },
+    { id: 'automation', label: 'Automation', phase: 'Phase 3 · Execution', on: true, render: renderAutomation, health: automationHealth },
 
-    { id: 'knowledge-graph',  label: 'Knowledge Graph',  phase: 'Phase 4 · Intelligence' },
-    { id: 'relationships',    label: 'Relationships',    phase: 'Phase 4 · Intelligence' },
-    { id: 'semantic-search',  label: 'Semantic Search',  phase: 'Phase 4 · Intelligence' },
-    { id: 'context-explorer', label: 'Context Explorer', phase: 'Phase 4 · Intelligence' },
+    { id: 'knowledge-graph',  label: 'Knowledge Graph',  phase: 'Phase 4 · Intelligence', on: true, render: renderKnowledge,     health: knowledgeHealth },
+    { id: 'relationships',    label: 'Relationships',    phase: 'Phase 4 · Intelligence', on: true, render: renderRelationships, health: knowledgeHealth },
+    { id: 'semantic-search',  label: 'Semantic Search',  phase: 'Phase 4 · Intelligence', on: true, render: renderSemanticSearch, health: semanticHealth },
+    { id: 'context-explorer', label: 'Context Explorer', phase: 'Phase 4 · Intelligence', on: true, render: renderContext,       health: contextHealth },
 
     { id: 'trend-analysis',          label: 'Trend Analysis',          phase: 'Phase 5 · Evolution' },
     { id: 'learning-metrics',        label: 'Learning Metrics',        phase: 'Phase 5 · Evolution' },
@@ -548,6 +553,169 @@ function renderPlanning() {
     </div>`;
     return viewHeader('Planning', 'Goal decomposition & execution planning', statusPill(planningHealth()))
         + `<div class="mc-grid">` + panel('Goals', goals, 'span2') + panel('Planning Metrics', metrics, 'span2') + `</div>`;
+}
+
+/* ============================ Phase 3 · Execution ============================ */
+function relFuture(iso) {
+    const d = new Date(iso); if (isNaN(d)) return '—';
+    let s = Math.floor((d.getTime() - Date.now()) / 1000);
+    if (s <= 0) return 'now';
+    if (s < 60) return 'in ' + s + 's';
+    const m = Math.floor(s / 60); if (m < 60) return 'in ' + m + 'm';
+    const h = Math.floor(m / 60); if (h < 24) return 'in ' + h + 'h ' + (m % 60) + 'm';
+    return 'in ' + Math.floor(h / 24) + 'd';
+}
+function fmtDur(s) {
+    if (s == null || isNaN(s)) return '—'; s = Math.floor(s);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60); if (m < 60) return m + 'm ' + (s % 60) + 's';
+    const h = Math.floor(m / 60); if (h < 24) return h + 'h ' + (m % 60) + 'm';
+    return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+}
+
+function schedulerHealth() {
+    if (!DATA.scheduler) return { status: 'dim', detail: 'no data' };
+    const jobs = DATA.scheduler.jobs || [], failed = jobs.filter(j => j.last_status === 'failed').length, en = jobs.filter(j => j.enabled).length;
+    return { status: failed ? 'warn' : 'ok', detail: en + ' jobs enabled' + (failed ? ' · ' + failed + ' failed' : '') };
+}
+function renderScheduler() {
+    if (!DATA.scheduler) return viewHeader('Scheduler') + '<div class="muted pad">No scheduler data.</div>';
+    const jobs = (DATA.scheduler.jobs || []).slice().sort((a, b) => new Date(a.next_run || 0) - new Date(b.next_run || 0));
+    const rows = jobs.map(j => `<div class="job"><div class="job-l">${sdot(j.enabled ? (j.last_status === 'failed' ? 'bad' : 'ok') : 'dim')}<div><div class="job-name">${esc(j.name)}</div><div class="job-cron">${esc(j.cron)}</div></div></div><div class="job-cell">${j.next_run ? relFuture(j.next_run) : '—'}<div class="job-sub">next run</div></div><div class="job-cell"><span class="job-status ${esc(j.last_status)}">${esc(j.last_status)}</span><div class="job-sub">${j.last_run ? relTime(j.last_run) : 'never'}</div></div><div class="job-cell">${j.avg_duration_s ? j.avg_duration_s + 's' : '—'}<div class="job-sub">avg</div></div></div>`).join('');
+    return viewHeader('Scheduler', `${jobs.length} jobs`, statusPill(schedulerHealth())) + `<div class="job-head"><span>Job</span><span>Next</span><span>Last</span><span>Avg</span></div><div class="job-list">${rows}</div>`;
+}
+
+function queuesHealth() {
+    if (!DATA.queues) return { status: 'dim', detail: 'no data' };
+    const qs = DATA.queues.queues || [], hot = qs.filter(q => q.depth >= (q.warn || 8)).length, total = qs.reduce((a, q) => a + q.depth, 0);
+    return { status: hot ? 'warn' : 'ok', detail: total + ' queued' + (hot ? ' · ' + hot + ' over threshold' : '') };
+}
+function renderQueues() {
+    if (!DATA.queues) return viewHeader('Queues') + '<div class="muted pad">No queue data.</div>';
+    const cards = (DATA.queues.queues || []).map(q => {
+        const over = q.depth >= (q.warn || 8);
+        return `<div class="qcard ${over ? 'warn' : ''}"><div class="qcard-h"><span class="qcard-name">${esc(q.name)}</span><span class="qcard-depth ${over ? 'warn' : ''}">${q.depth}</span></div>${bar(Math.min(100, (q.depth / ((q.warn || 8) * 1.5)) * 100), over ? 'warn' : '')}<div class="qcard-f"><span>in-flight ${q.in_flight}</span><span>${q.rate_per_min}/min</span><span>oldest ${fmtDur(q.oldest_age_s)}</span></div></div>`;
+    }).join('');
+    return viewHeader('Queues', `${(DATA.queues.queues || []).length} queues`, statusPill(queuesHealth())) + `<div class="qgrid">${cards}</div>`;
+}
+
+function wlState(s) { s = String(s || '').toLowerCase(); if (s === 'running') return 'ok'; if (s === 'retrying') return 'warn'; if (['blocked', 'failed'].includes(s)) return 'bad'; return 'dim'; }
+function workloadsHealth() {
+    if (!DATA.workloads) return { status: 'dim', detail: 'no data' };
+    const w = DATA.workloads.workloads || [], bad = w.filter(x => ['blocked', 'failed'].includes(x.state)).length, retry = w.filter(x => x.state === 'retrying').length, run = w.filter(x => x.state === 'running').length;
+    return { status: (bad || retry) ? 'warn' : 'ok', detail: run + ' running · ' + (bad + retry) + ' need attention' };
+}
+function renderWorkloads() {
+    if (!DATA.workloads) return viewHeader('Workloads') + '<div class="muted pad">No workloads.</div>';
+    const w = DATA.workloads.workloads || [];
+    const states = ['running', 'queued', 'retrying', 'blocked', 'completed', 'failed'];
+    const counts = {}; w.forEach(x => counts[x.state] = (counts[x.state] || 0) + 1);
+    const chips = states.filter(s => counts[s]).map(s => `<span class="wl-chip ${wlState(s)}">${counts[s]} ${s}</span>`).join('');
+    const order = { running: 0, retrying: 1, blocked: 2, queued: 3, completed: 4, failed: 5 };
+    const rows = w.slice().sort((a, b) => (order[a.state] == null ? 9 : order[a.state]) - (order[b.state] == null ? 9 : order[b.state])).map(x => `<div class="wl ${wlState(x.state)}"><div class="wl-l">${sdot(wlState(x.state))}<div><div class="wl-name">${esc(x.name)}<span class="wl-kind">${esc(x.kind)}</span></div><div class="wl-agent">${esc(x.agent || '')}</div></div></div><div class="wl-state"><span class="wl-badge ${wlState(x.state)}">${esc(x.state)}</span>${x.progress != null ? `<div class="wl-prog">${bar(x.progress * 100, '')}</div>` : ''}</div><div class="wl-meta">${x.duration_s ? fmtDur(x.duration_s) : '—'}${x.restarts ? ' · ↻' + x.restarts : ''}<div class="wl-sub">${x.started ? relTime(x.started) : 'not started'}</div></div></div>`).join('');
+    return viewHeader('Workloads', chips, statusPill(workloadsHealth())) + `<div class="wl-head"><span>Workload</span><span>State</span><span>Runtime</span></div><div class="wl-list">${rows}</div>`;
+}
+
+function automationHealth() {
+    if (!DATA.automation) return { status: 'dim', detail: 'no data' };
+    const a = DATA.automation.automations || [], en = a.filter(x => x.enabled).length;
+    return { status: 'ok', detail: en + '/' + a.length + ' enabled' };
+}
+function renderAutomation() {
+    if (!DATA.automation) return viewHeader('Automation') + '<div class="muted pad">No automation data.</div>';
+    const rows = (DATA.automation.automations || []).map(x => `<div class="auto ${x.enabled ? '' : 'off'}"><div class="auto-l">${sdot(x.enabled ? (x.status === 'firing' ? 'warn' : 'ok') : 'dim')}<div><div class="auto-name">${esc(x.name)}</div><div class="auto-target">→ ${esc(x.target)}</div></div></div><div class="job-cell"><span class="trig-badge">${esc(x.trigger)}</span></div><div class="job-cell">${x.last_fired ? relTime(x.last_fired) : 'never'}<div class="job-sub">${x.fire_count} fires</div></div><div class="job-cell"><span class="auto-status ${esc(x.enabled ? x.status : 'disabled')}">${esc(x.enabled ? x.status : 'disabled')}</span></div></div>`).join('');
+    return viewHeader('Automation', `${(DATA.automation.automations || []).length} rules`, statusPill(automationHealth())) + `<div class="auto-head"><span>Rule</span><span>Trigger</span><span>Last Fired</span><span>State</span></div><div class="auto-list">${rows}</div>`;
+}
+
+/* ============================ Phase 4 · Intelligence ============================ */
+function knowledgeHealth() {
+    if (!DATA.knowledge) return { status: 'dim', detail: 'no data' };
+    return { status: 'ok', detail: DATA.knowledge.nodes.length + ' nodes · ' + DATA.knowledge.edges.length + ' edges' };
+}
+function typeClass(t) { return 'kt-' + String(t || 'idea'); }
+
+// deterministic force-directed layout (no randomness → stable each render)
+function layoutGraph(nodes, edges, W, H) {
+    const n = nodes.length, pos = {};
+    nodes.forEach((nd, i) => { const a = (i / n) * Math.PI * 2; pos[nd.id] = { x: W / 2 + Math.cos(a) * W * 0.3, y: H / 2 + Math.sin(a) * H * 0.3, vx: 0, vy: 0 }; });
+    const adj = edges.filter(e => pos[e.source] && pos[e.target]);
+    const K = Math.sqrt((W * H) / Math.max(1, n));
+    for (let it = 0; it < 240; it++) {
+        for (let i = 0; i < n; i++) { const pa = pos[nodes[i].id]; for (let j = i + 1; j < n; j++) { const pb = pos[nodes[j].id]; let dx = pa.x - pb.x, dy = pa.y - pb.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01; const f = (K * K) / d * 0.02, ux = dx / d, uy = dy / d; pa.vx += ux * f; pa.vy += uy * f; pb.vx -= ux * f; pb.vy -= uy * f; } }
+        for (const e of adj) { const pa = pos[e.source], pb = pos[e.target]; let dx = pa.x - pb.x, dy = pa.y - pb.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01; const f = (d * d) / K * 0.005, ux = dx / d, uy = dy / d; pa.vx -= ux * f; pa.vy -= uy * f; pb.vx += ux * f; pb.vy += uy * f; }
+        for (const nd of nodes) { const p = pos[nd.id]; p.vx += (W / 2 - p.x) * 0.005; p.vy += (H / 2 - p.y) * 0.005; p.x += Math.max(-8, Math.min(8, p.vx)); p.y += Math.max(-8, Math.min(8, p.vy)); p.vx *= 0.85; p.vy *= 0.85; }
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const nd of nodes) { const p = pos[nd.id]; minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); }
+    const pad = 46, sx = (W - 2 * pad) / Math.max(1, maxX - minX), sy = (H - 2 * pad) / Math.max(1, maxY - minY);
+    for (const nd of nodes) { const p = pos[nd.id]; p.x = pad + (p.x - minX) * sx; p.y = pad + (p.y - minY) * sy; }
+    return pos;
+}
+function renderKnowledge() {
+    if (!DATA.knowledge) return viewHeader('Knowledge Graph') + '<div class="muted pad">No graph data.</div>';
+    const K = DATA.knowledge, W = 900, H = 520, pos = layoutGraph(K.nodes, K.edges, W, H);
+    const edges = K.edges.filter(e => pos[e.source] && pos[e.target]).map(e => { const a = pos[e.source], b = pos[e.target]; return `<line class="kg-edge" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`; }).join('');
+    const nodes = K.nodes.map(nd => { const p = pos[nd.id], r = 6 + (nd.weight || 4); return `<g class="kg-node ${typeClass(nd.type)}"><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}"/><text x="${p.x.toFixed(1)}" y="${(p.y + r + 12).toFixed(1)}" text-anchor="middle">${esc(nd.label)}</text><title>${esc(nd.label)} · ${esc(nd.type)}</title></g>`; }).join('');
+    const types = Array.from(new Set(K.nodes.map(n => n.type)));
+    const legend = types.map(t => `<span class="kg-leg"><span class="kg-dot ${typeClass(t)}"></span>${esc(t)}</span>`).join('');
+    return viewHeader('Knowledge Graph', 'Entities & relationships', statusPill(knowledgeHealth()))
+        + `<div class="kg-legend">${legend}</div><div class="kg-wrap"><svg class="kg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${edges}${nodes}</svg></div>`;
+}
+
+function renderRelationships() {
+    if (!DATA.knowledge) return viewHeader('Relationships') + '<div class="muted pad">No data.</div>';
+    const K = DATA.knowledge, byId = {}; K.nodes.forEach(n => byId[n.id] = n);
+    const deg = {}; K.edges.forEach(e => { deg[e.source] = (deg[e.source] || 0) + 1; deg[e.target] = (deg[e.target] || 0) + 1; });
+    const nodes = K.nodes.slice().sort((a, b) => (deg[b.id] || 0) - (deg[a.id] || 0));
+    const rows = nodes.map(nd => {
+        const out = K.edges.filter(e => e.source === nd.id).map(e => `<span class="rel-edge">${esc(e.rel)} → <b>${esc((byId[e.target] || {}).label || e.target)}</b></span>`);
+        const inc = K.edges.filter(e => e.target === nd.id).map(e => `<span class="rel-edge in"><b>${esc((byId[e.source] || {}).label || e.source)}</b> ${esc(e.rel)} →</span>`);
+        const all = out.concat(inc);
+        if (!all.length) return '';
+        return `<div class="relrow"><div class="rel-node"><span class="kg-dot ${typeClass(nd.type)}"></span><span class="rel-name">${esc(nd.label)}</span><span class="rel-deg">${deg[nd.id] || 0}</span></div><div class="rel-edges">${all.join('')}</div></div>`;
+    }).join('');
+    return viewHeader('Relationships', `${K.edges.length} relationships · ${K.nodes.length} entities`, statusPill(knowledgeHealth())) + `<div class="rel-list">${rows}</div>`;
+}
+
+let semQuery = '';
+function setSemanticQuery(q) { semQuery = q; const el = document.getElementById('sem-results'); if (el) el.innerHTML = semanticResults(); }
+function buildSemanticIndex() {
+    const idx = [];
+    (DATA.knowledge ? DATA.knowledge.nodes : []).forEach(n => idx.push({ kind: 'entity', title: n.label, sub: n.type, text: n.label + ' ' + n.type }));
+    ((DATA.memory && DATA.memory.recent) || []).forEach(r => idx.push({ kind: 'memory', title: r.detail, sub: r.op, text: r.detail }));
+    ((DATA.reflection && DATA.reflection.entries) || []).forEach(e => idx.push({ kind: 'insight', title: e.insight, sub: 'reflection', text: e.insight + ' ' + e.action }));
+    ((DATA.planning && DATA.planning.goals) || []).forEach(g => idx.push({ kind: 'goal', title: g.title, sub: g.status, text: g.title }));
+    ((DATA.agents && DATA.agents.agents) || []).forEach(a => idx.push({ kind: 'agent', title: a.name, sub: a.role, text: a.name + ' ' + a.role + ' ' + (a.current_task || '') }));
+    ((DATA.diagnostics && DATA.diagnostics.events) || []).forEach(e => idx.push({ kind: 'diagnostic', title: e.message, sub: e.subsystem, text: e.message }));
+    return idx;
+}
+function semanticResults() {
+    const q = semQuery.trim().toLowerCase(), idx = buildSemanticIndex();
+    let res = q ? idx.filter(x => x.text.toLowerCase().includes(q)) : idx;
+    res = res.slice(0, 50);
+    if (!res.length) return '<div class="muted pad">No matches.</div>';
+    return res.map(x => `<div class="sr"><span class="sr-kind ${esc(x.kind)}">${esc(x.kind)}</span><span class="sr-title">${esc(x.title)}</span><span class="sr-sub">${esc(x.sub)}</span></div>`).join('');
+}
+function semanticHealth() { return { status: 'ok', detail: buildSemanticIndex().length + ' indexed' }; }
+function renderSemanticSearch() {
+    return viewHeader('Semantic Search', 'Cross-subsystem index', statusPill(semanticHealth()))
+        + `<input class="sem-input" id="sem-input" placeholder="Search entities, memory, insights, goals, agents…" oninput="setSemanticQuery(this.value)" value="${esc(semQuery)}">`
+        + `<div class="sr-list" id="sem-results">${semanticResults()}</div>`;
+}
+
+function contextHealth() {
+    if (!DATA.context) return { status: 'dim', detail: 'no data' };
+    const w = DATA.context.window || {};
+    return { status: w.pct >= 85 ? 'warn' : 'ok', detail: (w.pct || 0) + '% window used' };
+}
+function renderContext() {
+    if (!DATA.context) return viewHeader('Context Explorer') + '<div class="muted pad">No context data.</div>';
+    const C = DATA.context, w = C.window || {}, slotsArr = C.slots || [];
+    const maxTok = Math.max.apply(null, slotsArr.map(s => s.tokens).concat([1]));
+    const slots = slotsArr.slice().sort((a, b) => b.tokens - a.tokens).map(s => `<div class="ctx-slot"><div class="ctx-h"><span class="ctx-kind ${esc(s.kind)}">${esc(s.kind)}</span><span class="ctx-label">${esc(s.label)}${s.pinned ? ' <span class="ctx-pin">pinned</span>' : ''}</span><span class="ctx-tok">${fmtNum(s.tokens)}</span></div>${bar((s.tokens / maxTok) * 100, '')}</div>`).join('');
+    const wbar = `<div class="ctx-window"><div class="ctx-win-h"><span>Context Window</span><b>${fmtNum(w.used_tokens)} / ${fmtNum(w.max_tokens)} · ${w.pct}%</b></div>${bar(w.pct, w.pct >= 85 ? 'warn' : '')}</div>`;
+    return viewHeader('Context Explorer', 'What is loaded into working context', statusPill(contextHealth()))
+        + `<div class="mc-grid">` + panel('Window Utilization', wbar, 'span2') + panel('Loaded Slots (' + slotsArr.length + ')', slots, 'span2') + `</div>`;
 }
 
 /* ============================ router ============================ */

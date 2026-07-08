@@ -22,6 +22,12 @@ data/
   reasoning.json      ← cognitive performance metrics (Reasoning)
   reflection.json     ← metacognition & confidence calibration (Reflection)
   planning.json       ← goals & planning metrics (Planning)
+  scheduler.json      ← cron/scheduled jobs (Scheduler)
+  queues.json         ← work queues: depth/throughput (Queues)
+  workloads.json      ← running/queued/blocked workloads, k8s-style (Workloads)
+  automation.json     ← automation rules & triggers (Automation)
+  knowledge.json      ← entities + edges (Knowledge Graph; Relationships derives)
+  context.json        ← context-window slots (Context Explorer)
   <YYYY-MM-DD>.json   ← nightly self-audit reports (existing)
   manifest.json       ← ["2026-07-07.json", …] list of report files
 ```
@@ -132,6 +138,28 @@ Newest-first in the viewer; filterable by level. `error` lines drive the Logs he
   "goals":[ {"id":"G-01","title":"…","status":"active|blocked|done","progress":0.35,"steps_done":7,"steps_total":20} ] }
 ```
 
+## Phase 3 · Execution files
+```json
+// scheduler.json — jobs[]: {id,name,cron,next_run,last_run,last_status:"success|failed|running|idle",avg_duration_s,enabled}
+// queues.json    — queues[]: {name,depth,in_flight,rate_per_min,oldest_age_s,warn}
+// workloads.json — workloads[]: {id,name,kind:"task|job|daemon",state:"running|queued|retrying|blocked|completed|failed",agent,started,duration_s,restarts,progress}
+// automation.json— automations[]: {id,name,trigger:"cron|event|threshold|webhook",target,enabled,last_fired,fire_count,status:"armed|firing|disabled"}
+```
+
+## Phase 4 · Intelligence files
+```json
+// knowledge.json — a graph; Relationships + Semantic Search derive from it
+{ "updated":"ISO",
+  "nodes":[ {"id":"markus","label":"Markus Orus","type":"system|person|company|project|idea|machine|interface","weight":10} ],
+  "edges":[ {"source":"greg","target":"dms","rel":"owns"} ] }
+
+// context.json — current working-context assembly
+{ "updated":"ISO", "window":{"used_tokens":84000,"max_tokens":200000,"pct":42},
+  "slots":[ {"kind":"system|memory|goal|conversation|tool","label":"…","tokens":9200,"pinned":true} ] }
+```
+Semantic Search builds a client-side index across knowledge, memory, reflection, planning,
+agents, and diagnostics — no file of its own.
+
 ## reports (nightly self-audit — unchanged)
 `data/<date>.json` with `scores`, `composite`, `findings`, `proposals`, `modules_run`.
 Surfaced under the **Reports** subsystem; north-star metrics trend across all reports.
@@ -142,8 +170,8 @@ Surfaced under the **Reports** subsystem; north-star metrics trend across all re
 - **Phase 0 · Kernel** — Mission Control, Runtime, Agents, Diagnostics ✅ (live)
 - **Phase 1 · Observability** — Event Stream, Timeline, Logs, Alerts, Health ✅ (live)
 - **Phase 2 · Cognition** — Memory, Reasoning, Reflection, Planning ✅ (live)
-- **Phase 3 · Execution** — Scheduler, Queues, Workloads, Automation
-- **Phase 4 · Intelligence** — Knowledge Graph, Relationships, Semantic Search, Context Explorer
+- **Phase 3 · Execution** — Scheduler, Queues, Workloads, Automation ✅ (live)
+- **Phase 4 · Intelligence** — Knowledge Graph, Relationships, Semantic Search, Context Explorer ✅ (live)
 - **Phase 5 · Evolution** — Trend Analysis, Learning Metrics, Improvement Engine, Autonomous Optimization
 
 Each phase publishes its own `data/<subsystem>.json` following the same shape (a health/status,
