@@ -3,711 +3,1271 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DarkMail — Email for humans and their bots</title>
-  <meta name="description" content="DarkMail: The email client that lets you decide how much your AI handles. Local IMAP/SMTP, AI triage powered by Ollama, zero cloud lock-in." />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>DarkMail — Native macOS Email for AI</title>
+  <meta name="description" content="The native macOS email client built for autonomous agents. Structured APIs, agent permissions, human approval — email infrastructure for AI." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    /* ── DarkMail Product Page ── */
-
-    /* Hero — full width, two columns */
-    .dm-hero {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-      padding: 80px 0 60px;
+    :root {
+      --bg: #090909;
+      --surface: #111111;
+      --surface-2: #161616;
+      --surface-3: #1a1a1a;
+      --border: rgba(255,255,255,0.06);
+      --border-green: rgba(34,197,94,0.25);
+      --green: #22c55e;
+      --green-dim: #16a34a;
+      --green-glow: rgba(34,197,94,0.15);
+      --green-bg: rgba(34,197,94,0.08);
+      --text: #f0f0f0;
+      --text-secondary: #888888;
+      --text-muted: #555555;
+      --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      --container: 1200px;
+      --radius: 12px;
     }
-    .dm-hero-copy { max-width: 540px; }
-    .dm-hero-copy .label { margin-bottom: 20px; }
-    .dm-hero-copy h1 {
-      font-size: clamp(2.8rem, 6vw, 4.5rem);
-      line-height: 0.95;
-      letter-spacing: -0.055em;
-      font-weight: 800;
-      margin: 0 0 20px;
-    }
-    .dm-hero-copy h1 span {
-      color: var(--accent);
-    }
-    .dm-hero-copy .lede {
-      font-size: 1.1rem;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
       line-height: 1.6;
-      color: var(--muted);
-      margin-bottom: 28px;
-      max-width: 46ch;
+      -webkit-font-smoothing: antialiased;
     }
-    .dm-hero-visual {
-      position: relative;
-      border-radius: 16px;
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(var(--container), calc(100% - 48px)); margin: 0 auto; }
+
+    /* ── NAV ── */
+    .dm-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(9,9,9,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .dm-nav .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .dm-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 1.05rem; letter-spacing: 0.04em;
+    }
+    .dm-logo svg { color: var(--green); }
+    .dm-nav-links {
+      display: flex; gap: 28px; align-items: center;
+      font-size: 0.82rem; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-secondary);
+    }
+    .dm-nav-links a:hover { color: var(--text); }
+    .dm-nav-right {
+      display: flex; align-items: center; gap: 16px;
+      font-size: 0.82rem; color: var(--text-secondary);
+    }
+    .btn-dl {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 8px;
+      background: var(--green); color: #000;
+      font-weight: 700; font-size: 0.85rem;
+      border: none; cursor: pointer; transition: 0.2s;
+    }
+    .btn-dl:hover { background: #2dd469; }
+    .btn-dl svg { width: 16px; height: 16px; }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; border-radius: 8px;
+      background: transparent; color: var(--text);
+      font-weight: 600; font-size: 0.95rem;
+      border: 1px solid var(--border);
+      cursor: pointer; transition: 0.2s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); }
+
+    /* ── HERO ── */
+    .dm-hero {
+      padding: 80px 0 40px;
+      position: relative; overflow: hidden;
+    }
+    .dm-hero .container {
+      display: grid; grid-template-columns: 1fr 1.3fr;
+      gap: 40px; align-items: center;
+    }
+    .dm-hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: var(--green-bg); border: 1px solid var(--border-green);
+      font-size: 0.78rem; font-weight: 600; color: var(--green);
+      margin-bottom: 24px;
+    }
+    .dm-hero-badge .new-tag {
+      background: var(--green); color: #000;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+    }
+    .dm-hero h1 {
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 900; line-height: 0.95;
+      letter-spacing: -0.05em;
+      margin-bottom: 24px;
+    }
+    .dm-hero h1 .green { color: var(--green); }
+    .dm-hero .lede {
+      font-size: 1.05rem; color: var(--text-secondary);
+      max-width: 44ch; line-height: 1.65; margin-bottom: 32px;
+    }
+    .dm-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dm-hero .meta { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* Product mockup */
+    .dm-mockup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       overflow: hidden;
-      aspect-ratio: 4 / 3;
-      background: linear-gradient(135deg, rgba(106,182,255,0.08), rgba(245,165,36,0.06));
-      border: 1px solid rgba(124,153,182,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 12px;
     }
-    .dm-hero-visual .placeholder-label {
-      color: var(--muted);
-      font-size: 0.85rem;
+    .dm-mockup-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    .dm-mockup-dots { display: flex; gap: 6px; }
+    .dm-mockup-dots span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+    .dm-mockup-search {
+      flex: 1; margin-left: 12px;
+      padding: 5px 12px; border-radius: 6px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 11px;
+    }
+    .dm-mockup-body { display: grid; grid-template-columns: 180px 1fr 240px; min-height: 340px; }
+    .dm-mockup-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .dm-sidebar-section { padding: 0 12px; margin-bottom: 12px; }
+    .dm-sidebar-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; padding: 0 8px; }
+    .dm-sidebar-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-radius: 6px; cursor: default;
+      color: var(--text-secondary); font-size: 11px;
+    }
+    .dm-sidebar-item:hover { background: rgba(255,255,255,0.03); }
+    .dm-sidebar-item.active { background: rgba(34,197,94,0.08); color: var(--green); }
+    .dm-sidebar-item .badge {
+      padding: 1px 6px; border-radius: 4px;
+      background: var(--green); color: #000;
+      font-size: 9px; font-weight: 700;
+    }
+    .dm-sidebar-item .badge.gray { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+    .dm-mockup-list {
+      border-right: 1px solid var(--border);
+      padding: 8px;
+    }
+    .dm-mockup-list-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 8px 10px; font-size: 11px;
+    }
+    .dm-email-item {
+      padding: 10px; border-radius: 8px; cursor: default;
+      border: 1px solid transparent; margin-bottom: 2px;
+    }
+    .dm-email-item:hover { background: rgba(255,255,255,0.02); }
+    .dm-email-item.active { background: rgba(34,197,94,0.06); border-color: var(--border-green); }
+    .dm-email-item .from { font-weight: 600; font-size: 11px; color: var(--text); }
+    .dm-email-item .subject { font-size: 11px; color: var(--green); font-weight: 500; }
+    .dm-email-item .preview { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .dm-email-item .time { font-size: 9px; color: var(--text-muted); float: right; }
+    .dm-mockup-detail { padding: 14px; }
+    .dm-detail-header { margin-bottom: 12px; }
+    .dm-detail-from { font-weight: 600; font-size: 12px; }
+    .dm-detail-email { font-size: 10px; color: var(--text-muted); }
+    .dm-detail-tags { display: flex; gap: 4px; margin: 8px 0; flex-wrap: wrap; }
+    .dm-detail-tags span {
+      padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 600;
+    }
+    .tag-priority { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .tag-intent { background: var(--green-bg); color: var(--green); }
+    .tag-category { background: rgba(59,130,246,0.12); color: #3b82f6; }
+    .dm-detail-tabs { display: flex; gap: 0; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .dm-detail-tabs span {
+      padding: 6px 12px; font-size: 10px; color: var(--text-muted);
+      border-bottom: 2px solid transparent; cursor: default;
+    }
+    .dm-detail-tabs span.active { color: var(--text); border-color: var(--green); }
+    .dm-detail-body { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+    .dm-detail-entities { margin-top: 12px; }
+    .dm-detail-entities .entity {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 0; font-size: 10px; color: var(--text-secondary);
+    }
+    .dm-detail-entities .entity .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .dm-detail-actions { display: flex; gap: 6px; margin-top: 14px; }
+    .dm-detail-actions button {
+      padding: 6px 14px; border-radius: 6px; font-size: 10px; font-weight: 600;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); cursor: pointer;
+    }
+    .dm-detail-actions button.green { background: var(--green); color: #000; border-color: transparent; }
+
+    /* ── TRUST BAR ── */
+    .dm-trust {
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .dm-trust .container {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px;
+    }
+    .dm-trust-item {
+      text-align: center; padding: 16px 8px;
+    }
+    .dm-trust-item svg { display: block; margin: 0 auto 8px; color: var(--green); width: 28px; height: 28px; }
+    .dm-trust-item .label { font-size: 0.82rem; font-weight: 600; }
+    .dm-trust-item .sub { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* ── SECTIONS ── */
+    .dm-section { padding: 80px 0; }
+    .dm-section-border { border-top: 1px solid var(--border); }
+
+    /* Comparison */
+    .dm-compare {
+      display: grid; grid-template-columns: 0.8fr 1.2fr;
+      gap: 60px; align-items: center;
+    }
+    .dm-compare h2 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -0.04em; margin-bottom: 20px;
+    }
+    .dm-compare .body { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 16px; }
+    .dm-compare .tagline { color: var(--green); font-weight: 600; font-style: italic; }
+    .dm-compare-grid {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: start;
+    }
+    .dm-compare-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+    }
+    .dm-compare-col h4 {
+      font-size: 0.85rem; font-weight: 700; margin-bottom: 16px;
       text-align: center;
-      padding: 2rem;
-      opacity: 0.6;
     }
-    .dm-hero-visual .placeholder-label svg {
-      display: block;
-      margin: 0 auto 12px;
-      opacity: 0.4;
+    .dm-compare-col .icons { display: flex; justify-content: center; gap: 12px; margin-bottom: 16px; }
+    .dm-compare-col .icon-box {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .dm-compare-list { list-style: none; }
+    .dm-compare-list li {
+      padding: 8px 12px; border-radius: 6px;
+      font-size: 0.82rem; color: var(--text-secondary);
+      border: 1px solid var(--border); margin-bottom: 6px; text-align: center;
+    }
+    .dm-compare-list.green li {
+      border-color: var(--border-green);
+      background: var(--green-bg); color: var(--green);
+      font-weight: 500;
+    }
+    .dm-vs {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: var(--text-muted);
+      padding-top: 80px;
     }
 
-    /* Tagline bar */
-    .dm-tagline {
-      text-align: center;
-      padding: 48px 0 16px;
+    /* Agent cards */
+    .dm-cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
     }
-    .dm-tagline p {
-      font-family: "Instrument Serif", Georgia, serif;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      color: var(--muted);
-      letter-spacing: -0.02em;
-      line-height: 1.3;
+    .dm-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: border-color 0.3s;
     }
+    .dm-card:hover { border-color: var(--border-green); }
+    .dm-card .card-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--green-bg); border: 1px solid var(--border-green);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; color: var(--green); font-size: 18px;
+    }
+    .dm-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .dm-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.55; }
+    .dm-card ul { list-style: none; margin-top: 10px; }
+    .dm-card ul li {
+      font-size: 0.82rem; color: var(--text-secondary);
+      padding: 3px 0; padding-left: 16px; position: relative;
+    }
+    .dm-card ul li::before {
+      content: ""; position: absolute; left: 0; top: 10px;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    }
+    .dm-card .approve-btns { display: flex; gap: 6px; margin-top: 12px; }
+    .dm-card .approve-btns button {
+      padding: 6px 16px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+      border: none; cursor: pointer;
+    }
+    .dm-card .approve-btns .approve { background: var(--green); color: #000; }
+    .dm-card .approve-btns .reject { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
 
-    /* Section titles */
-    .dm-section {
-      padding: 48px 0;
-    }
-    .dm-section-head {
-      margin-bottom: 36px;
+    /* Section heads */
+    .dm-section-head { margin-bottom: 40px; }
+    .dm-section-head .kicker {
+      font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--green);
+      font-weight: 700; margin-bottom: 8px;
     }
     .dm-section-head h2 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1;
-      letter-spacing: -0.045em;
-      margin: 0 0 8px;
-    }
-    .dm-section-head p {
-      color: var(--muted);
-      font-size: 1.05rem;
-      max-width: 56ch;
-    }
-    .dm-section-head .section-kicker {
-      margin-bottom: 8px;
-    }
-
-    /* Feature grid — 3 cols */
-    .dm-features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-    .dm-feature {
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 28px;
-      backdrop-filter: blur(20px);
-    }
-    .dm-feature .icon-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-    }
-    .dm-feature .icon-wrap svg {
-      width: 24px;
-      height: 24px;
-    }
-    .icon-blue { background: rgba(106,182,255,0.12); color: var(--accent-2); }
-    .icon-amber { background: rgba(245,165,36,0.12); color: var(--accent); }
-    .icon-green { background: rgba(52,211,153,0.12); color: #34d399; }
-    .icon-purple { background: rgba(167,139,250,0.12); color: #a78bfa; }
-    .dm-feature h3 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin: 0 0 8px;
-    }
-    .dm-feature p {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.55;
-      margin: 0;
-    }
-
-    /* Bot Control Levels */
-    .dm-control-levels {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-    }
-    .dm-level {
-      position: relative;
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 28px 24px;
-      text-align: center;
-      transition: border-color 0.3s ease, transform 0.3s ease;
-    }
-    .dm-level:hover {
-      border-color: rgba(245,165,36,0.3);
-      transform: translateY(-2px);
-    }
-    .dm-level .level-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      margin: 0 auto 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.6rem;
-    }
-    .dm-level h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 0 0 8px;
-    }
-    .dm-level p {
-      font-size: 0.88rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 0;
-    }
-    .dm-level .level-tag {
-      display: inline-block;
-      margin-top: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .level-1 .level-icon { background: rgba(106,182,255,0.1); }
-    .level-1 .level-tag { background: rgba(106,182,255,0.1); color: var(--accent-2); border: 1px solid rgba(106,182,255,0.2); }
-    .level-2 .level-icon { background: rgba(52,211,153,0.1); }
-    .level-2 .level-tag { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
-    .level-3 .level-icon { background: rgba(245,165,36,0.1); }
-    .level-3 .level-tag { background: rgba(245,165,36,0.1); color: var(--accent); border: 1px solid rgba(245,165,36,0.2); }
-    .level-4 .level-icon { background: rgba(167,139,250,0.1); }
-    .level-4 .level-tag { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
-
-    /* How it works */
-    .dm-how-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      counter-reset: step;
-    }
-    .dm-step {
-      position: relative;
-      padding: 28px 24px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-    }
-    .dm-step .step-num {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), #ffbf5f);
-      color: #111827;
-      font-weight: 800;
-      font-size: 0.9rem;
-      margin-bottom: 14px;
-    }
-    .dm-step h4 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin: 0 0 8px;
-    }
-    .dm-step p {
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    /* Screenshot showcase */
-    .dm-showcase {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 24px;
-      align-items: start;
-    }
-    .dm-screenshot {
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(124,153,182,0.15);
-      background: linear-gradient(135deg, rgba(106,182,255,0.05), rgba(245,165,36,0.03));
-      aspect-ratio: 16 / 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dm-screenshot.tall { aspect-ratio: 3 / 4; }
-    .dm-screenshot-stack {
-      display: grid;
-      gap: 16px;
-    }
-
-    /* Download CTA */
-    .dm-download {
-      text-align: center;
-      padding: 60px 0;
-    }
-    .dm-download h2 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1;
-      letter-spacing: -0.045em;
-      margin: 0 0 12px;
-    }
-    .dm-download .sub {
-      color: var(--muted);
-      font-size: 1.05rem;
-      margin-bottom: 28px;
-    }
-    .dm-download-buttons {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 32px;
-    }
-    .dm-download .btn {
-      padding: 16px 28px;
-      font-size: 1rem;
-    }
-    .dm-requirements {
-      max-width: 520px;
-      margin: 0 auto;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 24px 28px;
-      text-align: left;
-    }
-    .dm-requirements h4 {
-      color: var(--accent);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin: 0 0 12px;
-    }
-    .dm-requirements li {
-      list-style: none;
-      padding: 6px 0 6px 20px;
-      position: relative;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-    .dm-requirements li::before {
-      content: "→";
-      position: absolute;
-      left: 0;
-      color: var(--accent);
-    }
-    .dm-requirements ul { padding: 0; margin: 0; }
-
-    /* Quote */
-    .dm-quote {
-      text-align: center;
-      padding: 56px 0;
-    }
-    .dm-quote blockquote {
-      margin: 0;
-      font-family: "Instrument Serif", Georgia, serif;
-      font-size: clamp(1.6rem, 3.5vw, 2.6rem);
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      color: #f7fafc;
-    }
-    .dm-quote cite {
-      display: block;
-      margin-top: 16px;
-      font-style: normal;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-family: Inter, sans-serif;
-    }
-
-    /* Built by */
-    .dm-built-by {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: center;
-      padding: 48px 0 60px;
-    }
-    .dm-built-copy h2 {
-      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.04em;
       line-height: 1.1;
-      letter-spacing: -0.04em;
-      margin: 0 0 16px;
     }
-    .dm-built-copy p {
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.6;
-      margin: 0 0 12px;
+    .dm-section-head p { color: var(--text-secondary); font-size: 1rem; margin-top: 8px; max-width: 52ch; }
+
+    /* Workflow */
+    .dm-workflow {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+      position: relative;
     }
-    .dm-built-visual {
-      border-radius: 16px;
+    .dm-workflow::before {
+      content: ""; position: absolute; top: 32px; left: 8%; right: 8%;
+      height: 2px; background: linear-gradient(90deg, var(--green), var(--green-dim), var(--green));
+      opacity: 0.3;
+    }
+    .dm-wf-step { text-align: center; position: relative; }
+    .dm-wf-step .wf-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border-green);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px; color: var(--green); font-size: 22px;
+      position: relative; z-index: 1;
+    }
+    .dm-wf-step h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; }
+    .dm-wf-step p { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+
+    /* Story */
+    .dm-story {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+    }
+    .dm-story h2 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px;
+    }
+    .dm-story p { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px; }
+    .dm-story .highlight { color: var(--green); font-weight: 600; }
+    .dm-story-diagram {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 32px; text-align: center;
+    }
+    .dm-story-hub {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      gap: 16px; align-items: center;
+    }
+    .dm-story-nodes { display: flex; flex-direction: column; gap: 10px; }
+    .dm-story-node {
+      padding: 8px 16px; border-radius: 8px;
+      background: var(--green-bg); border: 1px solid var(--border-green);
+      font-size: 0.82rem; font-weight: 500; color: var(--green);
+    }
+    .dm-story-center {
+      width: 72px; height: 72px; border-radius: 18px;
+      background: var(--green-bg); border: 2px solid var(--green);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--green); font-size: 28px;
+    }
+
+    /* Developer */
+    .dm-dev {
+      display: grid; grid-template-columns: 0.6fr 1fr 0.4fr;
+      gap: 32px; align-items: start;
+    }
+    .dm-dev-copy h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 12px;
+    }
+    .dm-dev-copy p { color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 20px; }
+    .dm-dev-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dm-dev-btns a {
+      padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      border: 1px solid var(--border); color: var(--text-secondary); transition: 0.2s;
+    }
+    .dm-dev-btns a:first-child { background: var(--green); color: #000; border-color: transparent; }
+    .dm-dev-btns a:hover { border-color: rgba(255,255,255,0.15); }
+    .dm-code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+      font-family: var(--mono); font-size: 0.82rem;
+      line-height: 1.7; overflow-x: auto;
+    }
+    .dm-code-block .kw { color: #c084fc; }
+    .dm-code-block .fn { color: #60a5fa; }
+    .dm-code-block .str { color: var(--green); }
+    .dm-code-block .prop { color: #fbbf24; }
+    .dm-code-block .cmt { color: var(--text-muted); }
+    .dm-sdk-list { display: flex; flex-direction: column; gap: 8px; }
+    .dm-sdk-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 0.82rem; color: var(--text-secondary); transition: 0.2s;
+    }
+    .dm-sdk-item:first-child { border-color: var(--border-green); color: var(--green); }
+    .dm-sdk-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dm-sdk-item:first-child .dot { background: var(--green); }
+    .dm-sdk-item .dot { background: var(--text-muted); }
+
+    /* Performance / Security grids */
+    .dm-perf-grid {
+      display: grid; grid-template-columns: 0.7fr repeat(4, 1fr);
+      gap: 16px; align-items: start;
+    }
+    .dm-perf-copy h2 {
+      font-size: clamp(1.6rem, 2.5vw, 2rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px;
+    }
+    .dm-perf-copy p { color: var(--text-secondary); font-size: 0.85rem; }
+    .dm-perf-item {
+      text-align: center; padding: 20px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); transition: border-color 0.3s;
+    }
+    .dm-perf-item:hover { border-color: var(--border-green); }
+    .dm-perf-item svg { display: block; margin: 0 auto 10px; color: var(--green); }
+    .dm-perf-item .label { font-size: 0.82rem; font-weight: 600; }
+    .dm-perf-item .sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── DISC / DOWNLOAD ── */
+    .dm-disc-section {
+      padding: 100px 0;
+      position: relative;
       overflow: hidden;
-      border: 1px solid rgba(124,153,182,0.15);
-      background: linear-gradient(135deg, rgba(245,165,36,0.06), rgba(106,182,255,0.04));
-      aspect-ratio: 4 / 3;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    }
+    .dm-disc-section::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(34,197,94,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .dm-disc-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+    }
+    .dm-disc-visual {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dm-disc-img {
+      width: 100%; max-width: 420px;
+      border-radius: 8px;
+      filter: brightness(1.05) contrast(1.1);
+      animation: discFloat 6s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    .dm-disc-glow {
+      position: absolute;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.04) 40%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: glowPulse 4s ease-in-out infinite;
+      z-index: 0;
+    }
+    @keyframes discFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(0.5deg); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    }
+    .dm-disc-copy h2 {
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 900; letter-spacing: -0.04em;
+      line-height: 1.05; margin-bottom: 16px;
+    }
+    .dm-disc-copy .disc-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+      font-size: 0.78rem; font-weight: 600; color: #ef4444;
+      margin-bottom: 20px; font-family: var(--mono);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .dm-disc-copy p {
+      color: var(--text-secondary); font-size: 0.95rem;
+      line-height: 1.65; margin-bottom: 12px;
+    }
+    .dm-disc-copy .disc-meta {
+      font-family: var(--mono); font-size: 0.78rem;
+      color: var(--text-muted); margin-top: 20px;
+      line-height: 1.8;
+    }
+    .dm-disc-copy .disc-meta span {
+      color: var(--green);
+    }
+    .dm-disc-actions {
+      display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;
+    }
+    .dm-disc-actions .btn-dl {
+      padding: 14px 28px; font-size: 0.95rem;
+    }
+
+    /* Why DarkMail + Pricing */
+    .dm-final {
+      display: grid; grid-template-columns: 1fr 1.4fr; gap: 60px; align-items: start;
+    }
+    .dm-final-copy h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px;
+    }
+    .dm-final-copy p { color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 12px; line-height: 1.6; }
+    .dm-pricing {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    .dm-price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .dm-price-card.featured { border-color: var(--green); }
+    .dm-price-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .dm-price-card .price { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
+    .dm-price-card .price .mo { font-size: 0.85rem; font-weight: 400; color: var(--text-muted); }
+    .dm-price-card .desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px; }
+    .dm-price-card ul { list-style: none; margin-bottom: 20px; }
+    .dm-price-card ul li {
+      font-size: 0.82rem; color: var(--text-secondary);
+      padding: 4px 0 4px 18px; position: relative;
+    }
+    .dm-price-card ul li::before {
+      content: "✓"; position: absolute; left: 0; color: var(--green); font-weight: 700;
+    }
+    .dm-price-card .price-btn {
+      display: block; width: 100%; padding: 10px;
+      border-radius: 8px; text-align: center;
+      font-weight: 700; font-size: 0.85rem;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); cursor: pointer; transition: 0.2s;
+    }
+    .dm-price-card.featured .price-btn {
+      background: var(--green); color: #000; border-color: transparent;
+    }
+
+    /* FAQ */
+    .dm-faq { margin-top: 60px; }
+    .dm-faq h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; }
+    .dm-faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    .dm-faq-item summary {
+      font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; color: var(--text-secondary);
+      list-style: none; display: flex; justify-content: space-between; align-items: center;
+    }
+    .dm-faq-item summary:hover { color: var(--text); }
+    .dm-faq-item summary::after { content: "+"; font-size: 1.2rem; color: var(--text-muted); }
+    .dm-faq-item[open] summary::after { content: "−"; }
+    .dm-faq-item p { font-size: 0.85rem; color: var(--text-muted); padding: 8px 0 4px; line-height: 1.6; }
+
+    /* Footer */
+    .dm-footer {
+      padding: 60px 0 40px;
+      border-top: 1px solid var(--border);
+    }
+    .dm-footer .container {
+      display: grid; grid-template-columns: 1.2fr repeat(4, 1fr);
+      gap: 32px;
+    }
+    .dm-footer-brand .dm-logo { margin-bottom: 8px; }
+    .dm-footer-brand p { font-size: 0.82rem; color: var(--text-muted); }
+    .dm-footer-col h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 12px; }
+    .dm-footer-col a { display: block; font-size: 0.85rem; color: var(--text-secondary); padding: 3px 0; }
+    .dm-footer-col a:hover { color: var(--text); }
+    .dm-footer-bottom {
+      margin-top: 40px; padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: var(--text-muted);
     }
 
     /* Responsive */
     @media (max-width: 980px) {
-      .dm-hero { grid-template-columns: 1fr; gap: 2rem; }
-      .dm-hero-copy { max-width: 100%; }
-      .dm-features { grid-template-columns: repeat(2, 1fr); }
-      .dm-control-levels { grid-template-columns: repeat(2, 1fr); }
-      .dm-how-grid { grid-template-columns: repeat(2, 1fr); }
-      .dm-showcase { grid-template-columns: 1fr; }
-      .dm-built-by { grid-template-columns: 1fr; }
+      .dm-hero .container { grid-template-columns: 1fr; }
+      .dm-mockup-body { grid-template-columns: 1fr; }
+      .dm-mockup-sidebar, .dm-mockup-detail { display: none; }
+      .dm-trust .container { grid-template-columns: repeat(3, 1fr); }
+      .dm-compare { grid-template-columns: 1fr; }
+      .dm-compare-grid { grid-template-columns: 1fr; }
+      .dm-vs { padding-top: 0; }
+      .dm-cards-grid { grid-template-columns: 1fr 1fr; }
+      .dm-workflow { grid-template-columns: repeat(3, 1fr); }
+      .dm-story { grid-template-columns: 1fr; }
+      .dm-dev { grid-template-columns: 1fr; }
+      .dm-perf-grid { grid-template-columns: repeat(2, 1fr); }
+      .dm-perf-copy { grid-column: span 2; }
+      .dm-final { grid-template-columns: 1fr; }
+      .dm-disc-layout { grid-template-columns: 1fr; text-align: center; }
+      .dm-disc-actions { justify-content: center; }
+      .dm-disc-img { max-width: 320px; }
+      .dm-footer .container { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 600px) {
-      .dm-hero { padding: 48px 0 32px; }
-      .dm-features { grid-template-columns: 1fr; }
-      .dm-control-levels { grid-template-columns: 1fr; }
-      .dm-how-grid { grid-template-columns: 1fr; }
+      .dm-nav-links { display: none; }
+      .dm-trust .container { grid-template-columns: repeat(2, 1fr); }
+      .dm-cards-grid { grid-template-columns: 1fr; }
+      .dm-workflow { grid-template-columns: repeat(2, 1fr); }
+      .dm-pricing { grid-template-columns: 1fr; }
+      .dm-perf-grid { grid-template-columns: 1fr; }
+      .dm-perf-copy { grid-column: span 1; }
+      .dm-footer .container { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="ambient ambient-a"></div>
-  <div class="ambient ambient-b"></div>
 
-  <header class="site-header">
-    <div class="container nav">
-      <a class="brand" href="/index.html">Markus <span>Orus</span></a>
-      <nav class="nav-links">
-        <a href="/index.html#about">About</a>
-        <a href="/index.html#work">Work</a>
-        <a href="/index.html#systems">Systems</a>
-        <a href="./studio.html">Studio</a>
-        <a href="./darkmail.html" style="color: var(--accent);">DarkMail</a>
-        <a href="/index.html#contact">Contact</a>
-      </nav>
+  <!-- ═══ NAV ═══ -->
+  <nav class="dm-nav">
+    <div class="container">
+      <div class="dm-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        DARKMAIL
+      </div>
+      <div class="dm-nav-links">
+        <a href="#features">Features</a>
+        <a href="#developers">For Developers</a>
+        <a href="#security">Security</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div class="dm-nav-right">
+        <span>Made with &#9829; by Markus</span>
+        <a class="btn-dl" href="#download">
+          Download for macOS
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83"/></svg>
+        </a>
+      </div>
     </div>
-  </header>
+  </nav>
 
-  <main>
-
-    <!-- ═══ HERO ═══ -->
-    <section class="container dm-hero">
-      <div class="dm-hero-copy">
-        <div class="label">Email for humans and their bots</div>
-        <h1>Email you actually <span>control.</span></h1>
+  <!-- ═══ HERO ═══ -->
+  <section class="dm-hero">
+    <div class="container">
+      <div>
+        <div class="dm-hero-badge">
+          <span class="new-tag">New</span>
+          DarkMail 1.0 is now available
+        </div>
+        <h1>Email,<br>rebuilt for <span class="green">AI.</span></h1>
         <p class="lede">
-          DarkMail is the email client that lets you decide how much your AI handles.
-          From read-only observer to full autopilot — you set the dial.
-          Local IMAP/SMTP, AI triage powered by Ollama, zero cloud lock-in.
+          The native macOS email client built for autonomous agents.
+          DarkMail gives AI assistants structured, permission-aware access to email
+          while keeping humans in control. Built natively for macOS with speed, privacy,
+          and automation at its core.
         </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#download">Download for macOS</a>
-          <a class="btn btn-secondary" href="https://github.com/markusclaw/darkmail" target="_blank">View Source</a>
+        <div class="dm-hero-actions">
+          <a class="btn-dl" href="#download" style="padding: 14px 28px; font-size: 0.95rem;">
+            Download for macOS
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </a>
+          <a class="btn-outline" href="#">
+            View Documentation
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
         </div>
+        <p class="meta">macOS 13.0+ &middot; Apple Silicon &amp; Intel</p>
       </div>
-      <div class="dm-hero-visual">
-        <!-- PLACEHOLDER: Product screenshot — DarkMail inbox view or hero stock image -->
-        <div class="placeholder-label">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="M21 15l-5-5L5 21"/>
-          </svg>
-          Hero image placeholder<br>
-          <small>Product screenshot or stock image (4:3)</small>
-        </div>
-      </div>
-    </section>
 
-    <!-- ═══ TAGLINE BAR ═══ -->
-    <div class="container dm-tagline">
-      <p>Your inbox. Your rules. Your AI. Your machine.</p>
+      <!-- Product mockup -->
+      <div class="dm-mockup">
+        <div class="dm-mockup-bar">
+          <div class="dm-mockup-dots"><span></span><span></span><span></span></div>
+          <div class="dm-mockup-search">Search messages, people, attachments... &#8984;K</div>
+        </div>
+        <div class="dm-mockup-body">
+          <div class="dm-mockup-sidebar">
+            <div class="dm-sidebar-section">
+              <div class="dm-sidebar-label">Agent Inboxes</div>
+              <div class="dm-sidebar-item active">
+                <span>&#9670; Sales Agent</span>
+                <span class="badge">12</span>
+              </div>
+              <div class="dm-sidebar-item">
+                <span>&#9670; Support Agent</span>
+                <span class="badge gray">8</span>
+              </div>
+              <div class="dm-sidebar-item">
+                <span>&#9670; Finance Agent</span>
+                <span class="badge gray">3</span>
+              </div>
+              <div class="dm-sidebar-item">
+                <span>&#9670; Personal</span>
+                <span class="badge gray">2</span>
+              </div>
+              <div class="dm-sidebar-item" style="color:var(--text-muted);">+ New Agent</div>
+            </div>
+            <div class="dm-sidebar-section">
+              <div class="dm-sidebar-label">System</div>
+              <div class="dm-sidebar-item">
+                <span>&#9881; Approval Queue</span>
+                <span class="badge">7</span>
+              </div>
+              <div class="dm-sidebar-item"><span>&#9776; Activity</span></div>
+              <div class="dm-sidebar-item"><span>&#9881; Settings</span></div>
+            </div>
+          </div>
+          <div class="dm-mockup-list">
+            <div class="dm-mockup-list-header">
+              <span style="font-weight:600;">Inbox / Sales Agent</span>
+              <span style="color:var(--text-muted);">12 Unread</span>
+            </div>
+            <div class="dm-email-item active">
+              <span class="time">9:41 AM</span>
+              <div class="from">Acme Corp</div>
+              <div class="subject">Enterprise Plan Inquiry</div>
+              <div class="preview">Hi Markus, we're interested in...</div>
+            </div>
+            <div class="dm-email-item">
+              <span class="time">8:32 AM</span>
+              <div class="from">Sarah Chen</div>
+              <div class="subject" style="color:var(--text);">Partnership Opportunity</div>
+              <div class="preview">Let's explore a potential partn...</div>
+            </div>
+            <div class="dm-email-item">
+              <span class="time">Yesterday</span>
+              <div class="from">Vertex Labs</div>
+              <div class="subject" style="color:var(--text);">Integration Questions</div>
+              <div class="preview">Do you support SSO and...</div>
+            </div>
+            <div class="dm-email-item">
+              <span class="time">Yesterday</span>
+              <div class="from">Michael Anderson</div>
+              <div class="subject" style="color:var(--text);">Re: Proposal Review</div>
+              <div class="preview">Thanks for the proposal. I have...</div>
+            </div>
+          </div>
+          <div class="dm-mockup-detail">
+            <div class="dm-detail-header">
+              <div class="dm-detail-from">Acme Corp</div>
+              <div class="dm-detail-email">enterprise@acme.com</div>
+            </div>
+            <div class="dm-detail-tags">
+              <span class="tag-priority">a.priority High</span>
+              <span class="tag-intent">a.intent Sales</span>
+              <span class="tag-category">Enterprise</span>
+            </div>
+            <div class="dm-detail-tabs">
+              <span class="active">Summary</span>
+              <span>All Context</span>
+              <span>Details</span>
+            </div>
+            <div class="dm-detail-body">
+              Acme Corp is interested in our enterprise plan for their team of 50 users. They need SSO, audit logs, and priority support.
+            </div>
+            <div class="dm-detail-entities">
+              <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Detected Entities</div>
+              <div class="entity"><span class="dot"></span> Acme Corp (Company)</div>
+              <div class="entity"><span class="dot"></span> 50 Users (Team Size)</div>
+              <div class="entity"><span class="dot"></span> SSO (Requirement)</div>
+            </div>
+            <div class="dm-detail-actions">
+              <button>Reply</button>
+              <button>Draft with AI</button>
+              <button class="green">Add to Queue</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <!-- ═══ BOT CONTROL LEVELS ═══ -->
-    <section class="container dm-section">
-      <div class="dm-section-head">
-        <span class="section-kicker">The dial</span>
-        <h2>You decide how much your bot handles</h2>
-        <p>DarkMail ships with four control levels. Start conservative, dial up as you build trust. Change anytime.</p>
+  <!-- ═══ TRUST BAR ═══ -->
+  <section class="dm-trust">
+    <div class="container">
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83"/></svg>
+        <div class="label">Native macOS</div>
+        <div class="sub">Swift &amp; SwiftUI</div>
       </div>
-      <div class="dm-control-levels">
-        <div class="dm-level level-1">
-          <div class="level-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </div>
-          <h3>Observer</h3>
-          <p>AI reads and categorizes your mail. Never acts. You see triage scores but make every decision.</p>
-          <span class="level-tag">Read-only</span>
-        </div>
-        <div class="dm-level level-2">
-          <div class="level-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <h3>Assistant</h3>
-          <p>AI suggests actions and drafts replies. You approve before anything sends. Training wheels on.</p>
-          <span class="level-tag">Suggest + confirm</span>
-        </div>
-        <div class="dm-level level-3">
-          <div class="level-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M2 12h20"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          </div>
-          <h3>Co-pilot</h3>
-          <p>AI auto-trashes spam, archives noise, and flags what matters. You handle the important stuff.</p>
-          <span class="level-tag">Shared control</span>
-        </div>
-        <div class="dm-level level-4">
-          <div class="level-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-          </div>
-          <h3>Autopilot</h3>
-          <p>AI manages your entire inbox. Responds, archives, escalates. You review a daily digest.</p>
-          <span class="level-tag">Full autonomy</span>
-        </div>
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+        <div class="label">Apple Silicon</div>
+        <div class="sub">Fully optimized</div>
       </div>
-    </section>
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 20h20M5 20V8l7-5 7 5v12"/><rect x="9" y="12" width="6" height="8"/></svg>
+        <div class="label">Offline Ready</div>
+        <div class="sub">Local first</div>
+      </div>
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <div class="label">AI Native</div>
+        <div class="sub">Built for agents</div>
+      </div>
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <div class="label">Open API</div>
+        <div class="sub">Developer first</div>
+      </div>
+      <div class="dm-trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="label">Privacy First</div>
+        <div class="sub">Your data, yours</div>
+      </div>
+    </div>
+  </section>
 
-    <!-- ═══ FEATURES ═══ -->
-    <section class="container dm-section">
-      <div class="dm-section-head">
-        <span class="section-kicker">What you get</span>
-        <h2>Everything runs on your machine</h2>
-        <p>No accounts to create. No data leaving your network. No subscriptions.</p>
+  <!-- ═══ COMPARISON ═══ -->
+  <section class="dm-section dm-section-border" id="features">
+    <div class="container dm-compare">
+      <div>
+        <h2>Stop treating AI like a human clicking emails.</h2>
+        <p class="body">
+          Traditional email clients were designed for people.
+          DarkMail was designed for AI systems that need structured access to conversations,
+          attachments, metadata, permissions, and workflows.
+        </p>
+        <p class="body">Interface matters. Infrastructure changes everything.</p>
+        <p class="tagline">This is the email layer for autonomous software.</p>
       </div>
-      <div class="dm-features">
-        <div class="dm-feature">
-          <div class="icon-wrap icon-blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
+      <div class="dm-compare-grid">
+        <div class="dm-compare-col">
+          <h4>Traditional Email Clients</h4>
+          <div class="icons">
+            <div class="icon-box">&#9993;</div>
+            <div class="icon-box">&#128233;</div>
+            <div class="icon-box">&#9993;</div>
           </div>
-          <h3>Full local control</h3>
-          <p>IMAP/SMTP client running on your hardware. Your email never touches a third-party server. SQLite database you can query directly.</p>
+          <ul class="dm-compare-list">
+            <li>Mouse clicks</li>
+            <li>Unread counters</li>
+            <li>Folders</li>
+            <li>Notifications</li>
+            <li>Manual actions</li>
+          </ul>
         </div>
-        <div class="dm-feature">
-          <div class="icon-wrap icon-amber">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V11h2a6 6 0 0 1 6 6H2a6 6 0 0 1 6-6h2V9.5A4 4 0 0 1 12 2z"/>
-              <path d="M12 22v-3"/>
-            </svg>
-          </div>
-          <h3>AI triage</h3>
-          <p>Ollama scores every message for importance, categorizes it, and suggests what to do. Runs on your GPU — never phones home.</p>
-        </div>
-        <div class="dm-feature">
-          <div class="icon-wrap icon-green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <h3>Dark native UI</h3>
-          <p>Clean, minimal interface built for focus. Fast search, smart filtering, keyboard shortcuts, and distraction-free reading.</p>
-        </div>
-        <div class="dm-feature">
-          <div class="icon-wrap icon-purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-          </div>
-          <h3>Any provider</h3>
-          <p>Gmail, Outlook, Proton, Fastmail, Titan, or any IMAP provider. No vendor lock-in. No gatekeeping. Bring your own domain.</p>
-        </div>
-        <div class="dm-feature">
-          <div class="icon-wrap icon-blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
-            </svg>
-          </div>
-          <h3>Standalone app</h3>
-          <p>Ships as a macOS DMG. Drag to Applications, launch, done. No terminal needed. First-run setup wizard walks you through everything.</p>
-        </div>
-        <div class="dm-feature">
-          <div class="icon-wrap icon-amber">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-            </svg>
-          </div>
-          <h3>Open source</h3>
-          <p>Full source on GitHub. Built with FastAPI + Python. Fork it, extend it, make it yours. Community-driven development.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ PRODUCT SCREENSHOTS ═══ -->
-    <section class="container dm-section">
-      <div class="dm-section-head">
-        <span class="section-kicker">Inside DarkMail</span>
-        <h2>Built for the way you actually work</h2>
-      </div>
-      <div class="dm-showcase">
-        <div class="dm-screenshot">
-          <!-- PLACEHOLDER: Main inbox screenshot -->
-          <div class="placeholder-label">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <path d="M21 15l-5-5L5 21"/>
-            </svg>
-            Inbox view screenshot<br>
-            <small>Show the main inbox with triage scores (16:10)</small>
-          </div>
-        </div>
-        <div class="dm-screenshot-stack">
-          <div class="dm-screenshot" style="aspect-ratio: 4/3;">
-            <!-- PLACEHOLDER: AI triage detail -->
-            <div class="placeholder-label">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-              AI triage detail<br>
-              <small>Score + category + summary (4:3)</small>
+        <div class="dm-vs">VS</div>
+        <div class="dm-compare-col" style="border-color: var(--border-green);">
+          <h4 style="color:var(--green);">DarkMail</h4>
+          <div class="icons">
+            <div class="icon-box" style="border: 1px solid var(--border-green); background: var(--green-bg);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
             </div>
           </div>
-          <div class="dm-screenshot" style="aspect-ratio: 4/3;">
-            <!-- PLACEHOLDER: Setup wizard screenshot -->
-            <div class="placeholder-label">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-              Setup wizard or stock image<br>
-              <small>First-run experience (4:3)</small>
-            </div>
+          <ul class="dm-compare-list green">
+            <li>Structured APIs</li>
+            <li>Agent Permissions</li>
+            <li>Task Queue</li>
+            <li>Conversation Context</li>
+            <li>Automation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ BUILT FOR AGENTS ═══ -->
+  <section class="dm-section dm-section-border">
+    <div class="container">
+      <div class="dm-section-head">
+        <div class="kicker">Capabilities</div>
+        <h2>Built for Agents</h2>
+      </div>
+      <div class="dm-cards-grid">
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <h3>Agent Inbox</h3>
+          <p>Every AI assistant gets its own mailbox. Separate identities. Separate permissions. Separate history.</p>
+        </div>
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Permission Engine</h3>
+          <p>Give an agent exactly what it needs. No more.</p>
+          <ul>
+            <li>Read only</li>
+            <li>Reply only</li>
+            <li>Draft only</li>
+            <li>Attachment access</li>
+          </ul>
+        </div>
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3>Conversation Memory</h3>
+          <p>DarkMail understands threads. Your AI receives the entire conversation — not disconnected messages.</p>
+        </div>
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          </div>
+          <h3>Structured Objects</h3>
+          <p>Every message becomes structured data: sender, recipients, intent, attachments, metadata, priority, entities.</p>
+        </div>
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <h3>Human Approval Queue</h3>
+          <p>AI drafts. You approve. One click.</p>
+          <div class="approve-btns">
+            <button class="approve">Approve</button>
+            <button class="reject">Reject</button>
+          </div>
+        </div>
+        <div class="dm-card">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h3>Local First</h3>
+          <p>Runs natively on macOS. No Electron. Fast. Private. Yours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ AI WORKFLOW ═══ -->
+  <section class="dm-section dm-section-border">
+    <div class="container">
+      <div class="dm-section-head">
+        <div class="kicker">How it works</div>
+        <h2>The AI Workflow</h2>
+      </div>
+      <div class="dm-workflow">
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <h4>Incoming Email</h4>
+          <p>Email arrives in your inbox.</p>
+        </div>
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h4>DarkMail Parser</h4>
+          <p>Structures and understands the message.</p>
+        </div>
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </div>
+          <h4>AI Agent</h4>
+          <p>Analyzes context and determines intent.</p>
+        </div>
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h4>Actions</h4>
+          <p>Agent creates drafts, tasks, or updates systems.</p>
+        </div>
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <h4>Human Approval</h4>
+          <p>You review and approve when needed.</p>
+        </div>
+        <div class="dm-wf-step">
+          <div class="wf-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <h4>Send</h4>
+          <p>Message sent with full context and confidence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ BUILT FOR MARKUS ═══ -->
+  <section class="dm-section dm-section-border">
+    <div class="container dm-story">
+      <div>
+        <h2>Built for Markus</h2>
+        <p>Markus needed a way to interact with email like an operating system — not like a person.</p>
+        <p>DarkMail became the communication layer between AI agents and the outside world.</p>
+        <p class="highlight">Now every message can become work.</p>
+      </div>
+      <div class="dm-story-diagram">
+        <div class="dm-story-hub">
+          <div class="dm-story-nodes">
+            <div class="dm-story-node">Customers</div>
+            <div class="dm-story-node">Partners</div>
+            <div class="dm-story-node">Vendors</div>
+          </div>
+          <div class="dm-story-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="dm-story-nodes">
+            <div class="dm-story-node">Agents</div>
+            <div class="dm-story-node">Systems</div>
+            <div class="dm-story-node">Automation</div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ═══ HOW IT WORKS ═══ -->
-    <section class="container dm-section">
-      <div class="dm-section-head">
-        <span class="section-kicker">Get started</span>
-        <h2>Up and running in four steps</h2>
-      </div>
-      <div class="dm-how-grid">
-        <div class="dm-step">
-          <div class="step-num">1</div>
-          <h4>Install</h4>
-          <p>Download the DMG, drag to Applications. Launch DarkMail — no terminal, no dependencies.</p>
-        </div>
-        <div class="dm-step">
-          <div class="step-num">2</div>
-          <h4>Connect your email</h4>
-          <p>Enter your IMAP/SMTP credentials in the setup wizard. Works with any provider out of the box.</p>
-        </div>
-        <div class="dm-step">
-          <div class="step-num">3</div>
-          <h4>Set your bot level</h4>
-          <p>Choose how much control to give your AI — from observer to full autopilot. Change it anytime.</p>
-        </div>
-        <div class="dm-step">
-          <div class="step-num">4</div>
-          <h4>Start reading</h4>
-          <p>DarkMail syncs every 5 minutes. Spam gets auto-trashed, important floats to top. You own every byte.</p>
+  <!-- ═══ DEVELOPERS ═══ -->
+  <section class="dm-section dm-section-border" id="developers">
+    <div class="container dm-dev">
+      <div class="dm-dev-copy">
+        <h2>Designed for Developers</h2>
+        <p>Powerful APIs. Native SDK. Build the future.</p>
+        <div class="dm-dev-btns">
+          <a href="#">Read Docs</a>
+          <a href="#">GitHub</a>
+          <a href="#">SDK</a>
         </div>
       </div>
-    </section>
-
-    <!-- ═══ QUOTE ═══ -->
-    <section class="container dm-quote">
-      <blockquote>
-        "Email infrastructure you own. No subscriptions. No tracking. No lock-in."
-      </blockquote>
-      <cite>— Dark Matter Systems</cite>
-    </section>
-
-    <!-- ═══ DOWNLOAD ═══ -->
-    <section id="download" class="container dm-download">
-      <h2>Ready to take back your inbox?</h2>
-      <p class="sub">Available now for macOS. Windows and Linux coming soon.</p>
-      <div class="dm-download-buttons">
-        <a class="btn btn-primary" href="https://github.com/markusclaw/darkmail/releases" target="_blank">
-          Download macOS DMG
-        </a>
-        <a class="btn btn-secondary" href="https://github.com/markusclaw/darkmail" target="_blank">
-          GitHub Repository
-        </a>
+      <div class="dm-code-block">
+        <code>
+<span class="kw">let</span> emails = <span class="kw">try await</span> <span class="fn">darkmail</span>.<span class="fn">inbox</span>(.<span class="str">salesAgent</span>)<br><br>
+<span class="kw">let</span> urgent = emails<br>
+&nbsp;&nbsp;.<span class="fn">filter</span> { $0.<span class="prop">priority</span> == .<span class="str">high</span> }<br>
+&nbsp;&nbsp;.<span class="fn">withAttachments</span>()<br><br>
+<span class="kw">let</span> result = <span class="kw">try await</span> <span class="fn">markus</span>.<span class="fn">reply</span>(<br>
+&nbsp;&nbsp;<span class="prop">to</span>: urgent,<br>
+&nbsp;&nbsp;<span class="prop">using</span>: <span class="str">salesAgent</span>,<br>
+&nbsp;&nbsp;<span class="prop">approval</span>: .<span class="str">required</span><br>
+)
+        </code>
       </div>
-      <div class="dm-requirements">
-        <h4>System requirements</h4>
-        <ul>
-          <li>macOS 11 (Big Sur) or later</li>
-          <li>Any valid IMAP/SMTP email account</li>
-          <li>Optional: Ollama running locally for AI triage</li>
-        </ul>
+      <div class="dm-sdk-list">
+        <div class="dm-sdk-item"><span class="dot"></span> Swift SDK</div>
+        <div class="dm-sdk-item"><span class="dot"></span> Python SDK</div>
+        <div class="dm-sdk-item"><span class="dot"></span> TypeScript SDK</div>
+        <div class="dm-sdk-item"><span class="dot"></span> REST API</div>
+        <div class="dm-sdk-item"><span class="dot"></span> GraphQL API</div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ═══ BUILT BY ═══ -->
-    <section class="container dm-built-by">
-      <div class="dm-built-copy">
-        <h2>Built by Dark Matter Systems</h2>
-        <p>
-          The same team behind RavnPro and Blackstar Financial. We believe builders should own their tools —
-          email is fundamental infrastructure, not a subscription product.
-        </p>
-        <p>
-          DarkMail is designed to work. It's designed to scale with you. And it's designed to stay yours.
-        </p>
+  <!-- ═══ NATIVE PERFORMANCE ═══ -->
+  <section class="dm-section dm-section-border">
+    <div class="container dm-perf-grid">
+      <div class="dm-perf-copy">
+        <h2>Native Performance</h2>
+        <p>Built with modern macOS technologies for speed, reliability, and efficiency.</p>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+        <div class="label">Apple Silicon</div>
+        <div class="sub">Optimized</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <div class="label">SwiftUI</div>
+        <div class="sub">Native</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div class="label">Instant Search</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01"/></svg>
+        <div class="label">Keyboard Driven</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECURITY ═══ -->
+  <section class="dm-section dm-section-border" id="security">
+    <div class="container dm-perf-grid">
+      <div class="dm-perf-copy">
+        <h2>Security by Design</h2>
+        <p>Your data is yours. Always.</p>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <div class="label">E2E Encryption</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <div class="label">Audit Logging</div>
+        <div class="sub">Full transparency</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="label">Per-Agent Perms</div>
+        <div class="sub">Scoped control</div>
+      </div>
+      <div class="dm-perf-item">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <div class="label">Human Approval</div>
+        <div class="sub">Always in control</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ DOWNLOAD / DISC ═══ -->
+  <section class="dm-section dm-section-border dm-disc-section" id="download">
+    <div class="container dm-disc-layout">
+      <div class="dm-disc-visual">
+        <div class="dm-disc-glow"></div>
+        <img src="darkmail-disc.jpg" alt="DarkMail installer disc" class="dm-disc-img" />
+      </div>
+      <div class="dm-disc-copy">
+        <div class="disc-tag">DMG. INSTALLER</div>
+        <h2>Not distributed.<br>Burned.</h2>
+        <p>DarkMail ships the way underground software always did — no app store, no cloud dashboard, no managed service. One disc image. Your machine. Your rules.</p>
+        <p>Download the DMG installer, drag it into Applications, and own your email infrastructure. No accounts, no telemetry, no middlemen.</p>
+        <div class="disc-meta">
+          <span>darkmail-1.0.dmg</span> &middot; 48.2 MB &middot; SHA-256 verified<br>
+          macOS 13.0+ &middot; Apple Silicon &amp; Intel &middot; Signed &amp; Notarized
+        </div>
+        <div class="dm-disc-actions">
+          <a class="btn-dl" href="#">
+            Download DMG
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </a>
+          <a class="btn-outline" href="#">
+            Verify Checksum
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ WHY + PRICING ═══ -->
+  <section class="dm-section dm-section-border" id="pricing">
+    <div class="container dm-final">
+      <div class="dm-final-copy">
+        <h2>Why DarkMail Exists</h2>
+        <p>Email hasn't fundamentally changed in decades. Humans still manually classify, summarize, draft, and respond to thousands of repetitive messages.</p>
+        <p>AI changes the interface.</p>
+        <p>DarkMail transforms email into structured tasks that autonomous assistants can understand, reason about, and execute — while keeping the user in complete control.</p>
         <div style="margin-top: 20px;">
-          <a href="/index.html#contact" class="btn btn-primary">Get in Touch</a>
+          <a class="btn-dl" href="#download">Download for macOS</a>
         </div>
       </div>
-      <div class="dm-built-visual">
-        <!-- PLACEHOLDER: Team/brand image or abstract visual -->
-        <div class="placeholder-label">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="M21 15l-5-5L5 21"/>
-          </svg>
-          Brand / team image<br>
-          <small>Stock image or Dark Matter visual (4:3)</small>
+      <div>
+        <div class="dm-pricing">
+          <div class="dm-price-card">
+            <h3>Community</h3>
+            <div class="price">Free</div>
+            <div class="desc">For individuals getting started with AI-powered email.</div>
+            <ul>
+              <li>1 Mailbox</li>
+              <li>Basic agents</li>
+              <li>Local AI triage</li>
+            </ul>
+            <button class="price-btn">Download Free</button>
+          </div>
+          <div class="dm-price-card featured">
+            <h3 style="color:var(--green);">Pro</h3>
+            <div class="price">$20<span class="mo">/mo</span></div>
+            <div class="desc">For power users and professionals.</div>
+            <ul>
+              <li>Unlimited mailboxes</li>
+              <li>Unlimited agents</li>
+              <li>Automation</li>
+              <li>SDK access</li>
+              <li>Priority support</li>
+            </ul>
+            <button class="price-btn">Start Pro Trial</button>
+          </div>
+          <div class="dm-price-card">
+            <h3>Enterprise</h3>
+            <div class="price">Custom</div>
+            <div class="desc">For teams with advanced security and scale needs.</div>
+            <ul>
+              <li>Everything in Pro</li>
+              <li>SSO &amp; SAML</li>
+              <li>Audit logging</li>
+              <li>Private deployments</li>
+            </ul>
+            <button class="price-btn">Contact Sales</button>
+          </div>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <!-- FAQ -->
+        <div class="dm-faq">
+          <h3>Frequently Asked Questions</h3>
+          <details class="dm-faq-item">
+            <summary>Does DarkMail replace Apple Mail?</summary>
+            <p>DarkMail can run alongside or replace Apple Mail. It connects to the same IMAP/SMTP accounts but adds AI agent capabilities on top.</p>
+          </details>
+          <details class="dm-faq-item">
+            <summary>Does it work with Gmail?</summary>
+            <p>Yes. DarkMail works with any IMAP/SMTP provider including Gmail, Outlook, Fastmail, Proton, and custom domains.</p>
+          </details>
+          <details class="dm-faq-item">
+            <summary>Can AI send emails automatically?</summary>
+            <p>Only if you enable Autopilot mode. By default, all AI-drafted messages go through the human approval queue first.</p>
+          </details>
+          <details class="dm-faq-item">
+            <summary>Does it work offline?</summary>
+            <p>Yes. DarkMail caches everything locally. You can read, search, and draft offline. Sync happens when you reconnect.</p>
+          </details>
+          <details class="dm-faq-item">
+            <summary>Is it open source?</summary>
+            <p>The core engine is open source on GitHub. The Pro and Enterprise features are commercial.</p>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="dm-footer">
+    <div class="container">
+      <div class="dm-footer-brand">
+        <div class="dm-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          DARKMAIL
+        </div>
+        <p>Native macOS Email for AI</p>
+      </div>
+      <div class="dm-footer-col">
+        <h4>Product</h4>
+        <a href="#">Features</a>
+        <a href="#">Download</a>
+        <a href="#">Pricing</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div class="dm-footer-col">
+        <h4>Developers</h4>
+        <a href="#">Documentation</a>
+        <a href="#">API</a>
+        <a href="#">GitHub</a>
+        <a href="#">SDK</a>
+      </div>
+      <div class="dm-footer-col">
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Roadmap</a>
+        <a href="#">Discord</a>
+      </div>
+      <div class="dm-footer-col">
+        <h4>Legal</h4>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+    <div class="container dm-footer-bottom">
+      <span>&copy; 2026 Dark Matter Systems. All rights reserved.</span>
+      <span>Built by Markus</span>
+    </div>
+  </footer>
+
 </body>
 </html>
