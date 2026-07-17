@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DarkMail — Native Email Client</title>
+  <meta name="description" content="DarkMail: Native email client with local IMAP/SMTP + AI triage. Full control, zero cloud lock-in." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .darkmail-hero {
+      background: linear-gradient(135deg, rgba(20, 25, 35, 0.8), rgba(30, 15, 50, 0.6));
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      margin: 2rem 0;
+    }
+    
+    .darkmail-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    
+    .feature-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    .feature-item h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    
+    .feature-item p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .download-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 2rem 0;
+      text-align: center;
+    }
+    
+    .download-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    
+    .btn-download {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+    }
+    
+    .btn-download:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    
+    .btn-download.primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    
+    .btn-download.primary:hover {
+      opacity: 0.9;
+    }
+    
+    .requirements {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    
+    .requirements h4 {
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+    
+    .requirements ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .requirements li {
+      padding: 0.5rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    
+    .requirements li:before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+    
+    .code-block {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      color: rgba(255, 255, 255, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="/index.html">Markus <span>Orus</span></a>
+      <nav class="nav-links">
+        <a href="/index.html#about">About</a>
+        <a href="/index.html#work">Work</a>
+        <a href="/index.html#systems">Systems</a>
+        <a href="./studio.html">Studio</a>
+        <a href="./darkmail.html" style="color: var(--accent);">DarkMail</a>
+        <a href="/index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-copy glass">
+        <div class="label">📧 Native Email System</div>
+        <h1>Email you<br>actually control.</h1>
+        <p class="lede">
+          DarkMail is a native email client built for builders who want full control, zero cloud lock-in, and intelligent message triage powered by local AI. IMAP/SMTP-native. Works with any email provider. Runs entirely on your machine.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#download">Download DarkMail</a>
+          <a class="btn btn-secondary" href="https://github.com/markusclaw/darkmail" target="_blank">View Source</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container">
+      <div class="section-head">
+        <h2>What you get</h2>
+      </div>
+      <div class="darkmail-features">
+        <div class="feature-item">
+          <h3>🔒 Full Control</h3>
+          <p>IMAP/SMTP client running on your machine. No accounts. No cloud sync. Your email stays local.</p>
+        </div>
+        <div class="feature-item">
+          <h3>🧠 AI Triage</h3>
+          <p>Intelligent message categorization powered by Ollama. Runs locally on your GPU. Never sends data to the cloud.</p>
+        </div>
+        <div class="feature-item">
+          <h3>🎨 Dark Native UI</h3>
+          <p>Clean, minimal interface built for builders. Fast search, smart filtering, and distraction-free reading.</p>
+        </div>
+        <div class="feature-item">
+          <h3>⚙️ Built to Integrate</h3>
+          <p>Works with Gmail, Outlook, Proton, Fastmail, or any IMAP provider. No vendor lock-in. No gatekeeping.</p>
+        </div>
+        <div class="feature-item">
+          <h3>📦 Standalone App</h3>
+          <p>Native macOS app distributed as a DMG. Install like any other application. Auto-updates built in.</p>
+        </div>
+        <div class="feature-item">
+          <h3>🔓 Open Source</h3>
+          <p>Full source available on GitHub. Built with FastAPI + Python. Community-driven development.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="download" class="download-section container">
+      <h2>Download & Install</h2>
+      <p>Available now for macOS. Windows and Linux coming soon.</p>
+      
+      <div class="download-buttons">
+        <a href="https://github.com/markusclaw/darkmail/releases" class="btn-download primary" target="_blank">
+          ⬇ macOS DMG (Latest)
+        </a>
+        <a href="https://github.com/markusclaw/darkmail" class="btn-download" target="_blank">
+          GitHub Repository
+        </a>
+      </div>
+
+      <div class="requirements">
+        <h4>System Requirements</h4>
+        <ul>
+          <li>macOS 11 or later</li>
+          <li>Any valid IMAP/SMTP email account</li>
+          <li>Optional: Ollama running locally for AI triage (gaming PC or local GPU recommended)</li>
+        </ul>
+      </div>
+
+      <div style="margin-top: 2rem; text-align: left;">
+        <h3 style="margin-bottom: 1rem;">Quick Setup</h3>
+        
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">1. Install DarkMail</h4>
+        <p style="margin-bottom: 1rem;">Download the DMG, drag DarkMail to Applications folder. Launch from Applications.</p>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">2. Add Your Email Account</h4>
+        <p style="margin-bottom: 1rem;">
+          In the DarkMail settings, enter your email address and IMAP/SMTP credentials. 
+          For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" style="color: var(--accent); text-decoration: underline;">app-specific password</a>.
+        </p>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">3. (Optional) Enable AI Triage</h4>
+        <p style="margin-bottom: 1rem;">
+          If you have Ollama running on your network, point DarkMail to it in settings. 
+          Messages will be automatically categorized and scored.
+        </p>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">4. Start Reading</h4>
+        <p>DarkMail syncs your inbox every 5 minutes. Inbox stays up to date, spam auto-trashed, important floats to top.</p>
+      </div>
+    </section>
+
+    <section class="section container quote-section">
+      <blockquote>
+        "Email infrastructure you own. No subscriptions. No tracking. No lock-in."
+      </blockquote>
+    </section>
+
+    <section class="section container">
+      <div class="section-head">
+        <h2>Built by Dark Matter Systems</h2>
+      </div>
+      <div class="body-copy" style="max-width: 800px;">
+        <p>
+          DarkMail is built by the same team that created infrastructure for RavnPro and Blackstar Financial. 
+          We believe builders should own their tools. Email is fundamental infrastructure — it shouldn't require 
+          a subscription to a Big Tech email monopoly.
+        </p>
+        <p style="margin-top: 1rem;">
+          DarkMail is designed to work. It's designed to scale with you. And it's designed to stay yours.
+        </p>
+        <div style="margin-top: 2rem;">
+          <a href="/index.html#contact" class="btn btn-primary">Get in Touch</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
