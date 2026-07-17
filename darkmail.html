@@ -120,7 +120,15 @@
       max-width: 44ch; line-height: 1.65; margin-bottom: 32px;
     }
     .dm-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    .dm-hero .meta { font-size: 0.78rem; color: rgba(0,0,0,0.45); }
+    .dm-hero .meta {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      font-size: 0.78rem; color: rgba(0,0,0,0.45);
+    }
+    .dm-hero .support-link {
+      color: rgba(0,0,0,0.58); border-bottom: 1px solid rgba(0,0,0,0.24);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .dm-hero .support-link:hover { color: #000; border-color: #000; }
     .dm-hero .btn-dl {
       background: #000; color: var(--green);
     }
@@ -750,7 +758,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </a>
         </div>
-        <p class="meta">macOS 13.0+ &middot; Apple Silicon &amp; Intel</p>
+        <p class="meta">
+          <span>macOS 13.0+ &middot; Apple Silicon &amp; Intel</span>
+          <a class="support-link" href="https://buymeacoffee.com/roveloga" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a>
+        </p>
       </div>
 
       <div class="dm-hero-right">
@@ -1185,40 +1196,6 @@
           <a class="btn-outline" href="#">
             Verify Checksum
           </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══ PRICING ═══ -->
-  <section class="dm-section dm-section-border" id="pricing">
-    <div class="container dm-final">
-      <div class="dm-final-copy">
-        <h2>Free, because email already costs enough.</h2>
-        <p>Use the whole app without a subscription. If DarkMail gives you some time back, you can help support what comes next.</p>
-      </div>
-      <div class="dm-pricing">
-        <div class="dm-price-card featured">
-          <h3 style="color:var(--green);">DarkMail</h3>
-          <div class="price">Free</div>
-          <div class="desc">The complete macOS app. No trial clock. No recurring fee.</div>
-          <ul>
-            <li>Local-first email</li>
-            <li>User-controlled AI</li>
-            <li>No recurring fee</li>
-          </ul>
-          <a class="price-btn" href="#download">Download for macOS</a>
-        </div>
-        <div class="dm-price-card">
-          <h3>Support the project</h3>
-          <div class="price">☕ <span class="mo">Optional</span></div>
-          <div class="desc">If DarkMail makes email less annoying, buy me a coffee and help fund future updates.</div>
-          <ul>
-            <li>One-time contribution</li>
-            <li>No features locked away</li>
-            <li>Entirely optional</li>
-          </ul>
-          <a class="price-btn" href="https://buymeacoffee.com/roveloga" target="_blank" rel="noopener noreferrer">Buy me a coffee</a>
         </div>
       </div>
     </div>
