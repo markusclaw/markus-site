@@ -3,130 +3,391 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DarkMail — Native Email Client</title>
-  <meta name="description" content="DarkMail: Native email client with local IMAP/SMTP + AI triage. Full control, zero cloud lock-in." />
+  <title>DarkMail — Email for humans and their bots</title>
+  <meta name="description" content="DarkMail: The email client that lets you decide how much your AI handles. Local IMAP/SMTP, AI triage powered by Ollama, zero cloud lock-in." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .darkmail-hero {
-      background: linear-gradient(135deg, rgba(20, 25, 35, 0.8), rgba(30, 15, 50, 0.6));
-      border-radius: 16px;
-      padding: 3rem 2rem;
-      margin: 2rem 0;
-    }
-    
-    .darkmail-features {
+    /* ── DarkMail Product Page ── */
+
+    /* Hero — full width, two columns */
+    .dm-hero {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin: 2rem 0;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      padding: 80px 0 60px;
     }
-    
-    .feature-item {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
+    .dm-hero-copy { max-width: 540px; }
+    .dm-hero-copy .label { margin-bottom: 20px; }
+    .dm-hero-copy h1 {
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+      font-weight: 800;
+      margin: 0 0 20px;
     }
-    
-    .feature-item h3 {
+    .dm-hero-copy h1 span {
+      color: var(--accent);
+    }
+    .dm-hero-copy .lede {
       font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      color: var(--accent);
+      line-height: 1.6;
+      color: var(--muted);
+      margin-bottom: 28px;
+      max-width: 46ch;
     }
-    
-    .feature-item p {
-      font-size: 0.95rem;
-      line-height: 1.5;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    
-    .download-section {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 2rem;
-      margin: 2rem 0;
-      text-align: center;
-    }
-    
-    .download-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin: 1.5rem 0;
-      flex-wrap: wrap;
-    }
-    
-    .btn-download {
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      border: 2px solid var(--accent);
-      color: var(--accent);
-      background: transparent;
-    }
-    
-    .btn-download:hover {
-      background: var(--accent);
-      color: var(--bg);
-    }
-    
-    .btn-download.primary {
-      background: var(--accent);
-      color: var(--bg);
-    }
-    
-    .btn-download.primary:hover {
-      opacity: 0.9;
-    }
-    
-    .requirements {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin: 1.5rem 0;
-    }
-    
-    .requirements h4 {
-      margin-bottom: 1rem;
-      color: var(--accent);
-    }
-    
-    .requirements ul {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .requirements li {
-      padding: 0.5rem 0;
-      padding-left: 1.5rem;
+    .dm-hero-visual {
       position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      background: linear-gradient(135deg, rgba(106,182,255,0.08), rgba(245,165,36,0.06));
+      border: 1px solid rgba(124,153,182,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    
-    .requirements li:before {
+    .dm-hero-visual .placeholder-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.6;
+    }
+    .dm-hero-visual .placeholder-label svg {
+      display: block;
+      margin: 0 auto 12px;
+      opacity: 0.4;
+    }
+
+    /* Tagline bar */
+    .dm-tagline {
+      text-align: center;
+      padding: 48px 0 16px;
+    }
+    .dm-tagline p {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      color: var(--muted);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    /* Section titles */
+    .dm-section {
+      padding: 48px 0;
+    }
+    .dm-section-head {
+      margin-bottom: 36px;
+    }
+    .dm-section-head h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      letter-spacing: -0.045em;
+      margin: 0 0 8px;
+    }
+    .dm-section-head p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 56ch;
+    }
+    .dm-section-head .section-kicker {
+      margin-bottom: 8px;
+    }
+
+    /* Feature grid — 3 cols */
+    .dm-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .dm-feature {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px;
+      backdrop-filter: blur(20px);
+    }
+    .dm-feature .icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .dm-feature .icon-wrap svg {
+      width: 24px;
+      height: 24px;
+    }
+    .icon-blue { background: rgba(106,182,255,0.12); color: var(--accent-2); }
+    .icon-amber { background: rgba(245,165,36,0.12); color: var(--accent); }
+    .icon-green { background: rgba(52,211,153,0.12); color: #34d399; }
+    .icon-purple { background: rgba(167,139,250,0.12); color: #a78bfa; }
+    .dm-feature h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .dm-feature p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* Bot Control Levels */
+    .dm-control-levels {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .dm-level {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: border-color 0.3s ease, transform 0.3s ease;
+    }
+    .dm-level:hover {
+      border-color: rgba(245,165,36,0.3);
+      transform: translateY(-2px);
+    }
+    .dm-level .level-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+    .dm-level h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .dm-level p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+    .dm-level .level-tag {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .level-1 .level-icon { background: rgba(106,182,255,0.1); }
+    .level-1 .level-tag { background: rgba(106,182,255,0.1); color: var(--accent-2); border: 1px solid rgba(106,182,255,0.2); }
+    .level-2 .level-icon { background: rgba(52,211,153,0.1); }
+    .level-2 .level-tag { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+    .level-3 .level-icon { background: rgba(245,165,36,0.1); }
+    .level-3 .level-tag { background: rgba(245,165,36,0.1); color: var(--accent); border: 1px solid rgba(245,165,36,0.2); }
+    .level-4 .level-icon { background: rgba(167,139,250,0.1); }
+    .level-4 .level-tag { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
+
+    /* How it works */
+    .dm-how-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      counter-reset: step;
+    }
+    .dm-step {
+      position: relative;
+      padding: 28px 24px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+    }
+    .dm-step .step-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #ffbf5f);
+      color: #111827;
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+    }
+    .dm-step h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .dm-step p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Screenshot showcase */
+    .dm-showcase {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .dm-screenshot {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(124,153,182,0.15);
+      background: linear-gradient(135deg, rgba(106,182,255,0.05), rgba(245,165,36,0.03));
+      aspect-ratio: 16 / 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dm-screenshot.tall { aspect-ratio: 3 / 4; }
+    .dm-screenshot-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    /* Download CTA */
+    .dm-download {
+      text-align: center;
+      padding: 60px 0;
+    }
+    .dm-download h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      letter-spacing: -0.045em;
+      margin: 0 0 12px;
+    }
+    .dm-download .sub {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 28px;
+    }
+    .dm-download-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .dm-download .btn {
+      padding: 16px 28px;
+      font-size: 1rem;
+    }
+    .dm-requirements {
+      max-width: 520px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 28px;
+      text-align: left;
+    }
+    .dm-requirements h4 {
+      color: var(--accent);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 12px;
+    }
+    .dm-requirements li {
+      list-style: none;
+      padding: 6px 0 6px 20px;
+      position: relative;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .dm-requirements li::before {
       content: "→";
       position: absolute;
       left: 0;
       color: var(--accent);
     }
-    
-    .code-block {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      padding: 1rem;
-      margin: 1rem 0;
-      font-family: 'Courier New', monospace;
+    .dm-requirements ul { padding: 0; margin: 0; }
+
+    /* Quote */
+    .dm-quote {
+      text-align: center;
+      padding: 56px 0;
+    }
+    .dm-quote blockquote {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      color: #f7fafc;
+    }
+    .dm-quote cite {
+      display: block;
+      margin-top: 16px;
+      font-style: normal;
+      color: var(--muted);
       font-size: 0.9rem;
-      overflow-x: auto;
-      color: rgba(255, 255, 255, 0.8);
+      font-family: Inter, sans-serif;
+    }
+
+    /* Built by */
+    .dm-built-by {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      padding: 48px 0 60px;
+    }
+    .dm-built-copy h2 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      margin: 0 0 16px;
+    }
+    .dm-built-copy p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin: 0 0 12px;
+    }
+    .dm-built-visual {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(124,153,182,0.15);
+      background: linear-gradient(135deg, rgba(245,165,36,0.06), rgba(106,182,255,0.04));
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px) {
+      .dm-hero { grid-template-columns: 1fr; gap: 2rem; }
+      .dm-hero-copy { max-width: 100%; }
+      .dm-features { grid-template-columns: repeat(2, 1fr); }
+      .dm-control-levels { grid-template-columns: repeat(2, 1fr); }
+      .dm-how-grid { grid-template-columns: repeat(2, 1fr); }
+      .dm-showcase { grid-template-columns: 1fr; }
+      .dm-built-by { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .dm-hero { padding: 48px 0 32px; }
+      .dm-features { grid-template-columns: 1fr; }
+      .dm-control-levels { grid-template-columns: 1fr; }
+      .dm-how-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -149,121 +410,304 @@
   </header>
 
   <main>
-    <section class="hero container">
-      <div class="hero-copy glass">
-        <div class="label">📧 Native Email System</div>
-        <h1>Email you<br>actually control.</h1>
+
+    <!-- ═══ HERO ═══ -->
+    <section class="container dm-hero">
+      <div class="dm-hero-copy">
+        <div class="label">Email for humans and their bots</div>
+        <h1>Email you actually <span>control.</span></h1>
         <p class="lede">
-          DarkMail is a native email client built for builders who want full control, zero cloud lock-in, and intelligent message triage powered by local AI. IMAP/SMTP-native. Works with any email provider. Runs entirely on your machine.
+          DarkMail is the email client that lets you decide how much your AI handles.
+          From read-only observer to full autopilot — you set the dial.
+          Local IMAP/SMTP, AI triage powered by Ollama, zero cloud lock-in.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#download">Download DarkMail</a>
+          <a class="btn btn-primary" href="#download">Download for macOS</a>
           <a class="btn btn-secondary" href="https://github.com/markusclaw/darkmail" target="_blank">View Source</a>
         </div>
       </div>
-    </section>
-
-    <section class="section container">
-      <div class="section-head">
-        <h2>What you get</h2>
-      </div>
-      <div class="darkmail-features">
-        <div class="feature-item">
-          <h3>🔒 Full Control</h3>
-          <p>IMAP/SMTP client running on your machine. No accounts. No cloud sync. Your email stays local.</p>
-        </div>
-        <div class="feature-item">
-          <h3>🧠 AI Triage</h3>
-          <p>Intelligent message categorization powered by Ollama. Runs locally on your GPU. Never sends data to the cloud.</p>
-        </div>
-        <div class="feature-item">
-          <h3>🎨 Dark Native UI</h3>
-          <p>Clean, minimal interface built for builders. Fast search, smart filtering, and distraction-free reading.</p>
-        </div>
-        <div class="feature-item">
-          <h3>⚙️ Built to Integrate</h3>
-          <p>Works with Gmail, Outlook, Proton, Fastmail, or any IMAP provider. No vendor lock-in. No gatekeeping.</p>
-        </div>
-        <div class="feature-item">
-          <h3>📦 Standalone App</h3>
-          <p>Native macOS app distributed as a DMG. Install like any other application. Auto-updates built in.</p>
-        </div>
-        <div class="feature-item">
-          <h3>🔓 Open Source</h3>
-          <p>Full source available on GitHub. Built with FastAPI + Python. Community-driven development.</p>
+      <div class="dm-hero-visual">
+        <!-- PLACEHOLDER: Product screenshot — DarkMail inbox view or hero stock image -->
+        <div class="placeholder-label">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          Hero image placeholder<br>
+          <small>Product screenshot or stock image (4:3)</small>
         </div>
       </div>
     </section>
 
-    <section id="download" class="download-section container">
-      <h2>Download & Install</h2>
-      <p>Available now for macOS. Windows and Linux coming soon.</p>
-      
-      <div class="download-buttons">
-        <a href="https://github.com/markusclaw/darkmail/releases" class="btn-download primary" target="_blank">
-          ⬇ macOS DMG (Latest)
-        </a>
-        <a href="https://github.com/markusclaw/darkmail" class="btn-download" target="_blank">
-          GitHub Repository
-        </a>
+    <!-- ═══ TAGLINE BAR ═══ -->
+    <div class="container dm-tagline">
+      <p>Your inbox. Your rules. Your AI. Your machine.</p>
+    </div>
+
+    <!-- ═══ BOT CONTROL LEVELS ═══ -->
+    <section class="container dm-section">
+      <div class="dm-section-head">
+        <span class="section-kicker">The dial</span>
+        <h2>You decide how much your bot handles</h2>
+        <p>DarkMail ships with four control levels. Start conservative, dial up as you build trust. Change anytime.</p>
       </div>
-
-      <div class="requirements">
-        <h4>System Requirements</h4>
-        <ul>
-          <li>macOS 11 or later</li>
-          <li>Any valid IMAP/SMTP email account</li>
-          <li>Optional: Ollama running locally for AI triage (gaming PC or local GPU recommended)</li>
-        </ul>
-      </div>
-
-      <div style="margin-top: 2rem; text-align: left;">
-        <h3 style="margin-bottom: 1rem;">Quick Setup</h3>
-        
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">1. Install DarkMail</h4>
-        <p style="margin-bottom: 1rem;">Download the DMG, drag DarkMail to Applications folder. Launch from Applications.</p>
-
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">2. Add Your Email Account</h4>
-        <p style="margin-bottom: 1rem;">
-          In the DarkMail settings, enter your email address and IMAP/SMTP credentials. 
-          For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" style="color: var(--accent); text-decoration: underline;">app-specific password</a>.
-        </p>
-
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">3. (Optional) Enable AI Triage</h4>
-        <p style="margin-bottom: 1rem;">
-          If you have Ollama running on your network, point DarkMail to it in settings. 
-          Messages will be automatically categorized and scored.
-        </p>
-
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--accent);">4. Start Reading</h4>
-        <p>DarkMail syncs your inbox every 5 minutes. Inbox stays up to date, spam auto-trashed, important floats to top.</p>
+      <div class="dm-control-levels">
+        <div class="dm-level level-1">
+          <div class="level-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <h3>Observer</h3>
+          <p>AI reads and categorizes your mail. Never acts. You see triage scores but make every decision.</p>
+          <span class="level-tag">Read-only</span>
+        </div>
+        <div class="dm-level level-2">
+          <div class="level-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3>Assistant</h3>
+          <p>AI suggests actions and drafts replies. You approve before anything sends. Training wheels on.</p>
+          <span class="level-tag">Suggest + confirm</span>
+        </div>
+        <div class="dm-level level-3">
+          <div class="level-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <h3>Co-pilot</h3>
+          <p>AI auto-trashes spam, archives noise, and flags what matters. You handle the important stuff.</p>
+          <span class="level-tag">Shared control</span>
+        </div>
+        <div class="dm-level level-4">
+          <div class="level-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <h3>Autopilot</h3>
+          <p>AI manages your entire inbox. Responds, archives, escalates. You review a daily digest.</p>
+          <span class="level-tag">Full autonomy</span>
+        </div>
       </div>
     </section>
 
-    <section class="section container quote-section">
+    <!-- ═══ FEATURES ═══ -->
+    <section class="container dm-section">
+      <div class="dm-section-head">
+        <span class="section-kicker">What you get</span>
+        <h2>Everything runs on your machine</h2>
+        <p>No accounts to create. No data leaving your network. No subscriptions.</p>
+      </div>
+      <div class="dm-features">
+        <div class="dm-feature">
+          <div class="icon-wrap icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <h3>Full local control</h3>
+          <p>IMAP/SMTP client running on your hardware. Your email never touches a third-party server. SQLite database you can query directly.</p>
+        </div>
+        <div class="dm-feature">
+          <div class="icon-wrap icon-amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a4 4 0 0 1 4 4c0 1.5-.8 2.8-2 3.5V11h2a6 6 0 0 1 6 6H2a6 6 0 0 1 6-6h2V9.5A4 4 0 0 1 12 2z"/>
+              <path d="M12 22v-3"/>
+            </svg>
+          </div>
+          <h3>AI triage</h3>
+          <p>Ollama scores every message for importance, categorizes it, and suggests what to do. Runs on your GPU — never phones home.</p>
+        </div>
+        <div class="dm-feature">
+          <div class="icon-wrap icon-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3>Dark native UI</h3>
+          <p>Clean, minimal interface built for focus. Fast search, smart filtering, keyboard shortcuts, and distraction-free reading.</p>
+        </div>
+        <div class="dm-feature">
+          <div class="icon-wrap icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <h3>Any provider</h3>
+          <p>Gmail, Outlook, Proton, Fastmail, Titan, or any IMAP provider. No vendor lock-in. No gatekeeping. Bring your own domain.</p>
+        </div>
+        <div class="dm-feature">
+          <div class="icon-wrap icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <h3>Standalone app</h3>
+          <p>Ships as a macOS DMG. Drag to Applications, launch, done. No terminal needed. First-run setup wizard walks you through everything.</p>
+        </div>
+        <div class="dm-feature">
+          <div class="icon-wrap icon-amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+            </svg>
+          </div>
+          <h3>Open source</h3>
+          <p>Full source on GitHub. Built with FastAPI + Python. Fork it, extend it, make it yours. Community-driven development.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PRODUCT SCREENSHOTS ═══ -->
+    <section class="container dm-section">
+      <div class="dm-section-head">
+        <span class="section-kicker">Inside DarkMail</span>
+        <h2>Built for the way you actually work</h2>
+      </div>
+      <div class="dm-showcase">
+        <div class="dm-screenshot">
+          <!-- PLACEHOLDER: Main inbox screenshot -->
+          <div class="placeholder-label">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            Inbox view screenshot<br>
+            <small>Show the main inbox with triage scores (16:10)</small>
+          </div>
+        </div>
+        <div class="dm-screenshot-stack">
+          <div class="dm-screenshot" style="aspect-ratio: 4/3;">
+            <!-- PLACEHOLDER: AI triage detail -->
+            <div class="placeholder-label">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              AI triage detail<br>
+              <small>Score + category + summary (4:3)</small>
+            </div>
+          </div>
+          <div class="dm-screenshot" style="aspect-ratio: 4/3;">
+            <!-- PLACEHOLDER: Setup wizard screenshot -->
+            <div class="placeholder-label">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              Setup wizard or stock image<br>
+              <small>First-run experience (4:3)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ HOW IT WORKS ═══ -->
+    <section class="container dm-section">
+      <div class="dm-section-head">
+        <span class="section-kicker">Get started</span>
+        <h2>Up and running in four steps</h2>
+      </div>
+      <div class="dm-how-grid">
+        <div class="dm-step">
+          <div class="step-num">1</div>
+          <h4>Install</h4>
+          <p>Download the DMG, drag to Applications. Launch DarkMail — no terminal, no dependencies.</p>
+        </div>
+        <div class="dm-step">
+          <div class="step-num">2</div>
+          <h4>Connect your email</h4>
+          <p>Enter your IMAP/SMTP credentials in the setup wizard. Works with any provider out of the box.</p>
+        </div>
+        <div class="dm-step">
+          <div class="step-num">3</div>
+          <h4>Set your bot level</h4>
+          <p>Choose how much control to give your AI — from observer to full autopilot. Change it anytime.</p>
+        </div>
+        <div class="dm-step">
+          <div class="step-num">4</div>
+          <h4>Start reading</h4>
+          <p>DarkMail syncs every 5 minutes. Spam gets auto-trashed, important floats to top. You own every byte.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ QUOTE ═══ -->
+    <section class="container dm-quote">
       <blockquote>
         "Email infrastructure you own. No subscriptions. No tracking. No lock-in."
       </blockquote>
+      <cite>— Dark Matter Systems</cite>
     </section>
 
-    <section class="section container">
-      <div class="section-head">
-        <h2>Built by Dark Matter Systems</h2>
+    <!-- ═══ DOWNLOAD ═══ -->
+    <section id="download" class="container dm-download">
+      <h2>Ready to take back your inbox?</h2>
+      <p class="sub">Available now for macOS. Windows and Linux coming soon.</p>
+      <div class="dm-download-buttons">
+        <a class="btn btn-primary" href="https://github.com/markusclaw/darkmail/releases" target="_blank">
+          Download macOS DMG
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/markusclaw/darkmail" target="_blank">
+          GitHub Repository
+        </a>
       </div>
-      <div class="body-copy" style="max-width: 800px;">
+      <div class="dm-requirements">
+        <h4>System requirements</h4>
+        <ul>
+          <li>macOS 11 (Big Sur) or later</li>
+          <li>Any valid IMAP/SMTP email account</li>
+          <li>Optional: Ollama running locally for AI triage</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ═══ BUILT BY ═══ -->
+    <section class="container dm-built-by">
+      <div class="dm-built-copy">
+        <h2>Built by Dark Matter Systems</h2>
         <p>
-          DarkMail is built by the same team that created infrastructure for RavnPro and Blackstar Financial. 
-          We believe builders should own their tools. Email is fundamental infrastructure — it shouldn't require 
-          a subscription to a Big Tech email monopoly.
+          The same team behind RavnPro and Blackstar Financial. We believe builders should own their tools —
+          email is fundamental infrastructure, not a subscription product.
         </p>
-        <p style="margin-top: 1rem;">
+        <p>
           DarkMail is designed to work. It's designed to scale with you. And it's designed to stay yours.
         </p>
-        <div style="margin-top: 2rem;">
+        <div style="margin-top: 20px;">
           <a href="/index.html#contact" class="btn btn-primary">Get in Touch</a>
         </div>
       </div>
+      <div class="dm-built-visual">
+        <!-- PLACEHOLDER: Team/brand image or abstract visual -->
+        <div class="placeholder-label">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          Brand / team image<br>
+          <small>Stock image or Dark Matter visual (4:3)</small>
+        </div>
+      </div>
     </section>
+
   </main>
 </body>
 </html>
